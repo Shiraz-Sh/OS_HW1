@@ -9,15 +9,22 @@
 
 class Command {
     // TODO: Add your data members
+    const char* cmd_line;
+protected:
+    char* args[20]; // Assumption - up to 20 args
+    int count;
 public:
-    Command(const char *cmd_line);
+    Command(const char *cmd_line) : cmd_line(cmd_line) {};
 
     virtual ~Command();
 
     virtual void execute() = 0;
 
-    //virtual void prepare();
-    //virtual void cleanup();
+    /**
+     * prepare the cmd_line into args
+     */
+    virtual void prepare();
+    virtual void cleanup();
     // TODO: Add your extra methods if needed
 };
 
@@ -243,6 +250,7 @@ public:
 class SmallShell {
 private:
     // TODO: Add your data members
+    static char* chprompt;
     SmallShell();
 
 public:
@@ -254,10 +262,15 @@ public:
     {
         static SmallShell instance; // Guaranteed to be destroyed.
         // Instantiated on first use.
+        chprompt = "smash> ";
         return instance;
     }
 
     ~SmallShell();
+
+    void setChprompt(char* name) { chprompt = name; }
+
+    const char* getChprompt() { return chprompt; }
 
     void executeCommand(const char *cmd_line);
 

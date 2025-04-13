@@ -74,7 +74,18 @@ void _removeBackgroundSign(char *cmd_line) {
     cmd_line[str.find_last_not_of(WHITESPACE, idx) + 1] = 0;
 }
 
-// TODO: Add your implementation for classes in Commands.h 
+// TODO: Add your implementation for classes in Commands.h
+void Command::prepare() {
+    count = _parseCommandLine(this->cmd_line, args);
+}
+
+void Command::cleanup() {
+    // free space _parseCommandLine allocated //TODO: maybe needs to be in destructor?
+    for (int i = 0; i < count; ++i) {
+        free(args[i]);
+    }
+}
+
 
 SmallShell::SmallShell() {
 // TODO: add your implementation
