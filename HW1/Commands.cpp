@@ -3,9 +3,11 @@
 #include <iostream>
 #include <vector>
 #include <sstream>
-#include <sys/wait.h>
+//#include <sys/wait.h>
 #include <iomanip>
 #include "Commands.h"
+#include "BuildInCommands.h"
+#include <string>
 
 using namespace std;
 
@@ -75,6 +77,8 @@ void _removeBackgroundSign(char *cmd_line) {
 }
 
 // TODO: Add your implementation for classes in Commands.h
+Command::~Command() {}
+
 void Command::prepare() {
     count = _parseCommandLine(this->cmd_line, args);
 }
@@ -86,6 +90,10 @@ void Command::cleanup() {
     }
 }
 
+BuiltInCommand::BuiltInCommand(const char* cmd_line)
+        : Command(cmd_line) {}
+
+std::string SmallShell::chprompt;
 
 SmallShell::SmallShell() {
 // TODO: add your implementation
@@ -100,29 +108,29 @@ SmallShell::~SmallShell() {
 */
 Command *SmallShell::CreateCommand(const char *cmd_line) {
     // For example:
-  /*
-  string cmd_s = _trim(string(cmd_line));
-  string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" \n"));
+    string cmd_s = _trim(string(cmd_line));
+    string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" \n"));
 
-  if (firstWord.compare("pwd") == 0) {
-    return new GetCurrDirCommand(cmd_line);
-  }
-  else if (firstWord.compare("showpid") == 0) {
-    return new ShowPidCommand(cmd_line);
-  }
-  else if ...
-  .....
-  else {
-    return new ExternalCommand(cmd_line);
-  }
-  */
+    if (firstWord.compare("chprompt") == 0) {
+        return new chpromptCommand(cmd_line);
+    }
+    /*
+    if (firstWord.compare("pwd") == 0) {
+        return new GetCurrDirCommand(cmd_line);
+    }
+    else if (firstWord.compare("showpid") == 0) {
+        return new ShowPidCommand(cmd_line);
+    }
+    else {
+        return new ExternalCommand(cmd_line);
+    } */
     return nullptr;
 }
 
 void SmallShell::executeCommand(const char *cmd_line) {
     // TODO: Add your implementation here
     // for example:
-    // Command* cmd = CreateCommand(cmd_line);
-    // cmd->execute();
+    Command* cmd = CreateCommand(cmd_line);
+    cmd->execute();
     // Please note that you must fork smash process for some commands (e.g., external commands....)
 }

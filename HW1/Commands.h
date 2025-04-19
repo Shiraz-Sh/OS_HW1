@@ -3,6 +3,7 @@
 #define SMASH_COMMAND_H_
 
 #include <vector>
+#include <string>
 
 #define COMMAND_MAX_LENGTH (200)
 #define COMMAND_MAX_ARGS (20)
@@ -250,7 +251,7 @@ public:
 class SmallShell {
 private:
     // TODO: Add your data members
-    static char* chprompt;
+    static std::string chprompt;
     SmallShell();
 
 public:
@@ -262,15 +263,17 @@ public:
     {
         static SmallShell instance; // Guaranteed to be destroyed.
         // Instantiated on first use.
-        chprompt = "smash> ";
+        if (chprompt.empty()) {
+            chprompt = "smash> ";
+        }
         return instance;
     }
 
     ~SmallShell();
 
-    void setChprompt(char* name) { chprompt = name; }
+    void setChprompt(std::string name) { chprompt = name; }
 
-    const char* getChprompt() { return chprompt; }
+    std::string getChprompt() { return chprompt; }
 
     void executeCommand(const char *cmd_line);
 
