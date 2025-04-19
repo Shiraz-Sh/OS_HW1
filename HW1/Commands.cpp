@@ -114,6 +114,12 @@ Command *SmallShell::CreateCommand(const char *cmd_line) {
     if (firstWord.compare("chprompt") == 0) {
         return new chpromptCommand(cmd_line);
     }
+    else if (firstWord.compare("showpid") == 0) {
+        return new showpidCommand(cmd_line);
+    }
+    else if (firstWord.compare("pwd") == 0) {
+        return new pwdCommand(cmd_line);
+    }
     /*
     if (firstWord.compare("pwd") == 0) {
         return new GetCurrDirCommand(cmd_line);

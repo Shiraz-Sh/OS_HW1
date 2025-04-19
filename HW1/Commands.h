@@ -148,6 +148,8 @@ class JobsList {
 public:
     class JobEntry {
         // TODO: Add your data members
+        int pid;
+        int jobID;
     };
 
     // TODO: Add your data members
