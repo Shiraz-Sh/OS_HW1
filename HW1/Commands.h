@@ -257,6 +257,8 @@ private:
     SmallShell();
 
 public:
+    char* oldPWD = nullptr;
+
     Command *CreateCommand(const char *cmd_line);
 
     SmallShell(SmallShell const &) = delete; // disable copy ctor
