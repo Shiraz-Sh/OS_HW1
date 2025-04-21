@@ -5,4 +5,6 @@ set(CMAKE_CXX_STANDARD 14)
 
 add_executable(skeleton_smash smash.cpp Commands.cpp signals.cpp
         BuildInCommands.h
-        BuildInCommands.cpp)
+        BuildInCommands.cpp
+        JobsList.cpp
+        JobsList.h)

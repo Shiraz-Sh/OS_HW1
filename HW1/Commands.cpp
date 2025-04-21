@@ -3,7 +3,7 @@
 #include <iostream>
 #include <vector>
 #include <sstream>
-//#include <sys/wait.h>
+#include <sys/wait.h>
 #include <iomanip>
 #include "Commands.h"
 #include "BuildInCommands.h"
@@ -122,6 +122,9 @@ Command *SmallShell::CreateCommand(const char *cmd_line) {
     }
     else if (firstWord.compare("cd") == 0) {
         return new cdCommand(cmd_line);
+    }
+    else if (firstWord.compare("fg") == 0) {
+        return new fgCommand(cmd_line);
     }
     /*
     else {

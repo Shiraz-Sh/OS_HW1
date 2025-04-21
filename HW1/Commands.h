@@ -4,6 +4,7 @@
 
 #include <vector>
 #include <string>
+#include "JobsList.h"
 
 #define COMMAND_MAX_LENGTH (200)
 #define COMMAND_MAX_ARGS (20)
@@ -143,40 +144,6 @@ class QuitCommand : public BuiltInCommand {
     void execute() override;
 };
 
-
-class JobsList {
-public:
-    class JobEntry {
-        // TODO: Add your data members
-        int pid;
-        int jobID;
-    };
-
-    // TODO: Add your data members
-public:
-    JobsList();
-
-    ~JobsList();
-
-    void addJob(Command *cmd, bool isStopped = false);
-
-    void printJobsList();
-
-    void killAllJobs();
-
-    void removeFinishedJobs();
-
-    JobEntry *getJobById(int jobId);
-
-    void removeJobById(int jobId);
-
-    JobEntry *getLastJob(int *lastJobId);
-
-    JobEntry *getLastStoppedJob(int *jobId);
-
-    // TODO: Add extra methods or modify exisitng ones as needed
-};
-
 class JobsCommand : public BuiltInCommand {
     // TODO: Add your data members
 public:
@@ -258,6 +225,8 @@ private:
 
 public:
     char* oldPWD = nullptr;
+
+    JobsList jobsList;
 
     Command *CreateCommand(const char *cmd_line);
 
