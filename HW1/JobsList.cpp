@@ -23,3 +23,7 @@ JobsList::JobEntry* JobsList::getMaxJobID() {
 JobsList::JobEntry* JobsList::getJobById(int jobId) {
     //TODO: implement
 }
+
+void JobsList::addJob(Command *cmd, bool isStopped) {
+    // TODO: implement
+}

@@ -32,7 +32,7 @@ public:
 
 class BuiltInCommand : public Command {
 public:
-    BuiltInCommand(const char *cmd_line);
+    BuiltInCommand(const char *cmd_line) : Command(cmd_line) {};
 
     virtual ~BuiltInCommand() {
     }
@@ -40,10 +40,19 @@ public:
 
 class ExternalCommand : public Command {
 public:
-    ExternalCommand(const char *cmd_line);
+    ExternalCommand(const char *cmd_line) : Command(cmd_line) {};
 
     virtual ~ExternalCommand() {
     }
+
+    void execute() override {};
+};
+
+class complexExternalCommand : public ExternalCommand {
+public:
+    complexExternalCommand(const char* cmd_line) : ExternalCommand(cmd_line) {};
+
+    virtual ~complexExternalCommand() {};
 
     void execute() override;
 };

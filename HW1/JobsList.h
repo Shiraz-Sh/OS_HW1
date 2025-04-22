@@ -12,7 +12,7 @@ public:
     public:
         int getJobPid() { return this->pid; }
         int getJobID() { return this->jobID; }
-        int* getWstatus() {return this->wstatus; }
+        int* getWstatus() {return this->wstatus; } // Indicates a change where details about the child process that has ended will be stored.
     };
 
     // TODO: Add your data members
@@ -21,6 +21,7 @@ public:
 
     ~JobsList();
 
+    // TODO: I assumed that addJob fork the process itself
     void addJob(Command *cmd, bool isStopped = false);
 
     void printJobsList();

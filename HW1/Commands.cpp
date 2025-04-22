@@ -7,6 +7,7 @@
 #include <iomanip>
 #include "Commands.h"
 #include "BuildInCommands.h"
+#include "JobsList.h"
 #include <string>
 
 using namespace std;
@@ -90,8 +91,41 @@ void Command::cleanup() {
     }
 }
 
-BuiltInCommand::BuiltInCommand(const char* cmd_line)
-        : Command(cmd_line) {}
+/**
+ * @param cmd_line
+ * @return true if cmd_line contain '?' or '*'
+ */
+bool checkWildcards(const char* cmd_line) {
+    while (*cmd_line != '\0') {
+        if (*cmd_line == '?' || *cmd_line == '*')
+            return true;
+        cmd_line++;
+    }
+    return false;
+}
+
+void complexExternalCommand::execute() {
+    this->prepare();
+    std::string combinedCommand;
+    for (int i = 0; args[i] != nullptr; ++i) {
+        combinedCommand += args[i];
+        combinedCommand += " ";
+    }
+    combinedCommand = _trim(combinedCommand); // if you have a trim function
+
+    char* const newArgv[] = {
+            (char*)"/bin/bash",         // path to bash
+            (char*)"-c",                // tells bash to execute the next string
+            (char*)combinedCommand.c_str(),  // the command
+            nullptr                     // must terminat by a null pointer
+    };
+    execv("/bin/bash", newArgv);
+
+    // only runs if execv failed, since execv does not return on success
+    perror("smash error: execv failed");
+    this->cleanup();
+    return;
+}
 
 std::string SmallShell::chprompt;
 
@@ -126,6 +160,12 @@ Command *SmallShell::CreateCommand(const char *cmd_line) {
     else if (firstWord.compare("fg") == 0) {
         return new fgCommand(cmd_line);
     }
+    // TODO: add checks for all other builtInCommands
+    else if (checkWildcards(cmd_line)) {
+        Command* newCommand = new complexExternalCommand(cmd_line);
+        this->jobsList.addJob(newCommand);
+        return newCommand;
+    }
     /*
     else {
         return new ExternalCommand(cmd_line);
@@ -137,6 +177,6 @@ void SmallShell::executeCommand(const char *cmd_line) {
     // TODO: Add your implementation here
     // for example:
     Command* cmd = CreateCommand(cmd_line);
-    cmd->execute();
+    cmd->execute(); // TODO: needs to be changed and execute on processes that weren't fork.
     // Please note that you must fork smash process for some commands (e.g., external commands....)
 }
