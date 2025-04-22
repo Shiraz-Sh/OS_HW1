@@ -7,4 +7,6 @@ add_executable(skeleton_smash smash.cpp Commands.cpp signals.cpp
         BuildInCommands.h
         BuildInCommands.cpp
         JobsList.cpp
-        JobsList.h)
+        JobsList.h
+        SpecialCommands.h
+        SpecialCommands.cpp)

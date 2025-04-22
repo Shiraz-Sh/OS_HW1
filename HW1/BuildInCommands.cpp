@@ -20,7 +20,13 @@ void chpromptCommand::execute() {
 
 void showpidCommand::execute() {
     this->prepare();
-    printf("smash pid is %d\n", getpid()); //TODO: does getpid a systemcall? for perror
+    pid_t pid = getpid();
+    if (pid == -1) {
+        // If getpid() fails, handle the error
+        perror("smash error: getpid failed");
+    } else {
+        std::cout << "smash pid is " << pid << std::endl;
+    }
     this->cleanup();
 }
 

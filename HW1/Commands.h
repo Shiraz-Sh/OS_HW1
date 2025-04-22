@@ -57,70 +57,6 @@ public:
     void execute() override;
 };
 
-
-class RedirectionCommand : public Command {
-    // TODO: Add your data members
-public:
-    explicit RedirectionCommand(const char *cmd_line);
-
-    virtual ~RedirectionCommand() {
-    }
-
-    void execute() override;
-};
-
-class PipeCommand : public Command {
-    // TODO: Add your data members
-public:
-    PipeCommand(const char *cmd_line);
-
-    virtual ~PipeCommand() {
-    }
-
-    void execute() override;
-};
-
-class DiskUsageCommand : public Command {
-public:
-    DiskUsageCommand(const char *cmd_line);
-
-    virtual ~DiskUsageCommand() {
-    }
-
-    void execute() override;
-};
-
-class WhoAmICommand : public Command {
-public:
-    WhoAmICommand(const char *cmd_line);
-
-    virtual ~WhoAmICommand() {
-    }
-
-    void execute() override;
-};
-
-class NetInfo : public Command {
-    // TODO: Add your data members **BONUS: 10 Points**
-public:
-    NetInfo(const char *cmd_line);
-
-    virtual ~NetInfo() {
-    }
-
-    void execute() override;
-};
-
-class ChangeDirCommand : public BuiltInCommand {
-    // TODO: Add your data members public:
-    ChangeDirCommand(const char *cmd_line, char **plastPwd);
-
-    virtual ~ChangeDirCommand() {
-    }
-
-    void execute() override;
-};
-
 class JobsList;
 
 class QuitCommand : public BuiltInCommand {
@@ -150,17 +86,6 @@ public:
     KillCommand(const char *cmd_line, JobsList *jobs);
 
     virtual ~KillCommand() {
-    }
-
-    void execute() override;
-};
-
-class ForegroundCommand : public BuiltInCommand {
-    // TODO: Add your data members
-public:
-    ForegroundCommand(const char *cmd_line, JobsList *jobs);
-
-    virtual ~ForegroundCommand() {
     }
 
     void execute() override;

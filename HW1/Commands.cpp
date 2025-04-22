@@ -9,6 +9,7 @@
 #include "BuildInCommands.h"
 #include "JobsList.h"
 #include <string>
+#include "SpecialCommands.h"
 
 using namespace std;
 
@@ -159,6 +160,9 @@ Command *SmallShell::CreateCommand(const char *cmd_line) {
     }
     else if (firstWord.compare("fg") == 0) {
         return new fgCommand(cmd_line);
+    }
+    else if (firstWord.compare("whoami") == 0) {
+        return new whoamiCommand(cmd_line);
     }
     // TODO: add checks for all other builtInCommands
     else if (checkWildcards(cmd_line)) {
