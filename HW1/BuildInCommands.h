@@ -8,12 +8,16 @@ class chpromptCommand : public BuiltInCommand {
 public:
     chpromptCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {};
 
+    virtual ~chpromptCommand() {};
+
     void execute() override;
 };
 
 class showpidCommand : public BuiltInCommand {
 public:
     showpidCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {};
+
+    virtual ~showpidCommand() {};
 
     void execute() override;
 };
@@ -22,12 +26,16 @@ class pwdCommand : public BuiltInCommand {
 public:
     pwdCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {};
 
+    virtual ~pwdCommand() {};
+
     void execute() override;
 };
 
 class cdCommand : public BuiltInCommand {
 public:
     cdCommand(const char *cmd_line) : BuiltInCommand(cmd_line){};
+
+    virtual ~cdCommand() {};
 
     void execute() override;
 
@@ -42,6 +50,8 @@ public:
 class fgCommand : public BuiltInCommand {
 public:
     fgCommand(const char *cmd_line) : BuiltInCommand(cmd_line){};
+
+    virtual ~fgCommand() {};
 
     void execute() override;
 
