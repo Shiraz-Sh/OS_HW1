@@ -11,6 +11,8 @@
 #include <string>
 #include "SpecialCommands.h"
 
+#define MAX_ARGS 20
+
 using namespace std;
 
 const std::string WHITESPACE = " \n\r\t\f\v";
@@ -105,6 +107,22 @@ bool checkWildcards(const char* cmd_line) {
     return false;
 }
 
+bool checkIORedirection(char* args[MAX_ARGS], int count) {
+    for (int i = 0; i < count; i++) {
+        if (args[i] == ">" || args[i] == ">>")
+            return true;
+    }
+    return false;
+}
+
+bool checkPipe(char* args[MAX_ARGS], int count) {
+    for (int i = 0; i < count; i++) {
+        if (args[i] == "|" || args[i] == "|&")
+            return true;
+    }
+    return false;
+}
+
 void complexExternalCommand::execute() {
     this->prepare();
     std::string combinedCommand;
@@ -120,10 +138,20 @@ void complexExternalCommand::execute() {
             (char*)combinedCommand.c_str(),  // the command
             nullptr                     // must terminat by a null pointer
     };
-    execv("/bin/bash", newArgv);
 
-    // only runs if execv failed, since execv does not return on success
-    perror("smash error: execv failed");
+    pid_t pid = fork();
+    if (pid == -1) {
+        perror("smash error: fork failed");
+    } else if (pid == 0) {         // It's the child process
+        execv("/bin/bash", newArgv);
+        // only runs if execv failed, since execv does not return on success
+        perror("smash error: execv failed");
+    } else {
+        pid_t ret = wait(NULL);
+        if (ret == -1)
+            perror("smash error: wait failed");
+    }
+
     this->cleanup();
     return;
 }
@@ -145,6 +173,8 @@ Command *SmallShell::CreateCommand(const char *cmd_line) {
     // For example:
     string cmd_s = _trim(string(cmd_line));
     string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" \n"));
+    char* args[MAX_ARGS];
+    int count = _parseCommandLine(cmd_line, args); // allocate memory for args
 
     if (firstWord.compare("chprompt") == 0) {
         return new chpromptCommand(cmd_line);
@@ -166,14 +196,19 @@ Command *SmallShell::CreateCommand(const char *cmd_line) {
     }
     // TODO: add checks for all other builtInCommands
     else if (checkWildcards(cmd_line)) {
-        Command* newCommand = new complexExternalCommand(cmd_line);
-        this->jobsList.addJob(newCommand);
-        return newCommand;
+        return new complexExternalCommand(cmd_line);
+    }
+    else if (checkIORedirection(args, count)) {
+        return new RedirectionCommand(cmd_line);
+    }
+    else if (checkPipe(args, count)) {
+        return new PipeCommand(cmd_line);
     }
     /*
     else {
         return new ExternalCommand(cmd_line);
     } */
+    //TODO: free the space allocated for args
     return nullptr;
 }
 

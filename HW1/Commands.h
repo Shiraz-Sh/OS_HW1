@@ -6,6 +6,8 @@
 #include <string>
 #include "JobsList.h"
 
+#define MAX_ARGS 20
+
 #define COMMAND_MAX_LENGTH (200)
 #define COMMAND_MAX_ARGS (20)
 
@@ -13,7 +15,7 @@ class Command {
     // TODO: Add your data members
     const char* cmd_line;
 protected:
-    char* args[20]; // Assumption - up to 20 args
+    char* args[MAX_ARGS]; // Assumption - up to 20 args
     int count;
 public:
     Command(const char *cmd_line) : cmd_line(cmd_line) {};
