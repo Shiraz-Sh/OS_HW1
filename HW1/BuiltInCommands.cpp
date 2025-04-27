@@ -1,9 +1,10 @@
 
 #include <bits/stdc++.h>
 #include <unistd.h>
-#include "BuildInCommands.h"
+#include "BuiltInCommands.h"
 #include "JobsList.h"
 #include <sys/wait.h>
+
 #define MAX_PATH 200
 
 using namespace std;

@@ -6,7 +6,7 @@
 #include <sys/wait.h>
 #include <iomanip>
 #include "Commands.h"
-#include "BuildInCommands.h"
+#include "BuiltInCommands.h"
 #include "JobsList.h"
 #include <string>
 #include "SpecialCommands.h"

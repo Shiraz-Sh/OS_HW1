@@ -1,23 +1,30 @@
 #pragma once
 
+#include <map>
+
 class Command;
 
 class JobsList {
 public:
-    class JobEntry {
+    class JobEntry{
+    private:
         // TODO: Add your data members
-        int pid;
-        int jobID;  // jobID will start from 1 and increase each time we add a job
+        pid_t pid;
+        int job_id;  // job_id will start from 1 and increase each time we add a job
         int* wstatus;
     public:
-        int getJobPid() { return this->pid; }
-        int getJobID() { return this->jobID; }
-        int* getWstatus() {return this->wstatus; } // Indicates a change where details about the child process that has ended will be stored.
+        JobEntry(pid_t pid, int jid, int* status) : pid(pid), job_id(jid), wstatus(status){}
+        pid_t getJobPid() const{ return this->pid; }
+        int getJobID() const { return this->job_id; }
+        int* getWstatus() const {return this->wstatus; } // Indicates a change where details about the child process that has ended will be stored.
     };
 
+private:
     // TODO: Add your data members
+    std::map<pid_t, JobEntry> jobs;
+
 public:
-    JobsList();
+    JobsList() = default;
 
     ~JobsList();
 
@@ -46,7 +53,7 @@ public:
     bool isJobsListEmpty();
 
     /**
-     * @return the job with the maximal jobID
+     * @return the job with the maximal job_id
      */
     JobEntry* getMaxJobID();
 };

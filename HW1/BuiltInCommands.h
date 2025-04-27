@@ -1,6 +1,4 @@
-
-#ifndef SKELETON_SMASH_BUILDINCOMMANDS_H
-#define SKELETON_SMASH_BUILDINCOMMANDS_H
+#pragma once
 
 #include "Commands.h"
 
@@ -47,7 +45,7 @@ public:
     bool savingLastWorkingDict();
 };
 
-class fgCommand : public BuiltInCommand {
+class fgCommand : public BuiltInCommand{
 public:
     fgCommand(const char *cmd_line) : BuiltInCommand(cmd_line){};
 
@@ -69,4 +67,6 @@ public:
     bool isNumber(const char* s);
 };
 
-#endif //SKELETON_SMASH_BUILDINCOMMANDS_H
+class joibsCommand : public BuiltInCommand{
+
+};

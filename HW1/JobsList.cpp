@@ -1,17 +1,20 @@
 
 #include "JobsList.h"
 #include "Commands.h"
+#include <signal.h>
+#include <sys/types.h>
 
-JobsList::JobsList() {
-    // TODO: initialize if needed
-}
-
-JobsList::~JobsList() {
+JobsList::~JobsList(){
     // TODO: clean up if needed
 }
 
-bool JobsList::isJobsListEmpty() {
-    // TODO: implement
+bool JobsList::isJobsListEmpty(){
+    for (const auto& [job_id, entry] : jobs){
+        // Check if the job is still running. If stopped
+        if (kill(entry.getJobPid(), 0) == ESRCH){
+            continue;
+        }
+    }
     return true;
 }
 

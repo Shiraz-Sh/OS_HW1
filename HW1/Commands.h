@@ -1,6 +1,5 @@
 // Ver: 10-4-2025
-#ifndef SMASH_COMMAND_H_
-#define SMASH_COMMAND_H_
+#pragma once
 
 #include <vector>
 #include <string>
