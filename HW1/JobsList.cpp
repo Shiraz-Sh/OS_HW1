@@ -9,24 +9,41 @@ JobsList::~JobsList(){
 }
 
 bool JobsList::isJobsListEmpty(){
-    for (const auto& [job_id, entry] : jobs){
-        // Check if the job is still running. If stopped
-        if (kill(entry.getJobPid(), 0) == ESRCH){
-            continue;
-        }
-    }
+    for (const auto& [job_id, entry] : jobs)
+        if (kill(entry.getJobPid(), 0) != ESRCH) //check if a job didn't finish
+            return false;
     return true;
 }
 
 JobsList::JobEntry* JobsList::getMaxJobID() {
-    //TODO: implement
-    return nullptr;
+    int max_id = 0;
+    JobEntry* res = nullptr;
+
+    for (const auto& [job_id, entry] : jobs)
+        if (kill(entry.getJobPid(), 0) != ESRCH && max_id < job_id){ //check if a job didn't finish
+            max_id = job_id;
+            res = &jobs[job_id];
+        }
+    return res;
 }
 
 JobsList::JobEntry* JobsList::getJobById(int jobId) {
-    //TODO: implement
+    auto entry = jobs.find(jobId);
+
+    // if the entry doesn't exist or the job in the entry already finished
+    if (entry == jobs.end() || kill(entry->second.getJobPid(), 0) == ESRCH)
+        return nullptr;
+    return &entry->second;
 }
 
 void JobsList::addJob(Command *cmd, bool isStopped) {
-    // TODO: implement
+    job_cnt++;
+    pid_t pid = fork();
+
+    if (pid == 0){
+        // child proc
+    }
+    else{
+        // parent proc
+    }
 }

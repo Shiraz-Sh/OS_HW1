@@ -13,6 +13,7 @@ public:
         int job_id;  // job_id will start from 1 and increase each time we add a job
         int* wstatus;
     public:
+        JobEntry() = default;
         JobEntry(pid_t pid, int jid, int* status) : pid(pid), job_id(jid), wstatus(status){}
         pid_t getJobPid() const{ return this->pid; }
         int getJobID() const { return this->job_id; }
@@ -21,8 +22,8 @@ public:
 
 private:
     // TODO: Add your data members
-    std::map<pid_t, JobEntry> jobs;
-
+    std::map<int, JobEntry> jobs;
+    int job_cnt = 0;
 public:
     JobsList() = default;
 
@@ -38,22 +39,22 @@ public:
     void removeFinishedJobs();
 
     //TODO: return nullptr if couldnt find job id
-    JobEntry *getJobById(int jobId);
+    JobEntry* getJobById(int jobId); // V
 
-    void removeJobById(int jobId);
+    void removeJobById(int jobId); 
 
     JobEntry *getLastJob(int *lastJobId);
 
-    JobEntry *getLastStoppedJob(int *jobId);
+    JobEntry *getLastStoppedJob(int *jobId); 
 
     // TODO: Add extra methods or modify exisitng ones as needed
     /**
      * @return true if jobs list is empty
      */
-    bool isJobsListEmpty();
+    bool isJobsListEmpty(); // V
 
     /**
      * @return the job with the maximal job_id
      */
-    JobEntry* getMaxJobID();
+    JobEntry* getMaxJobID(); // V
 };
