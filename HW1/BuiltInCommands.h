@@ -67,6 +67,25 @@ public:
     bool isNumber(const char* s);
 };
 
-class joibsCommand : public BuiltInCommand{
+class jobsCommand : public BuiltInCommand{};
 
+class quitCommand : public BuiltInCommand{
+private:
+    JobsList* jobs;
+public:
+    quitCommand(const char* cmd_line, JobsList* jobs) : BuiltInCommand(cmd_line), jobs(jobs){};
+
+    virtual ~quitCommand() = default;
+
+    void execute() override;
 };
+
+class aliasCommand : public BuiltInCommand{
+public:
+    aliasCommand(const char* cmd_line) : BuiltInCommand(cmd_line){};
+
+    virtual ~aliasCommand() = default;
+
+    void execute() override;
+};
+

@@ -3,6 +3,7 @@
 #include <iostream>
 #include <vector>
 #include <sstream>
+#include <map>
 #include <sys/wait.h>
 #include <iomanip>
 #include "Commands.h"
@@ -169,14 +170,25 @@ SmallShell::~SmallShell() {
 /**
 * Creates and returns a pointer to Command class which matches the given command line (cmd_line)
 */
-Command *SmallShell::CreateCommand(const char *cmd_line) {
+Command* SmallShell::CreateCommand(const char* cmd_line){
     // For example:
     string cmd_s = _trim(string(cmd_line));
     string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" \n"));
     char* args[MAX_ARGS];
     int count = _parseCommandLine(cmd_line, args); // allocate memory for args
 
-    if (firstWord.compare("chprompt") == 0) {
+    // TODO: maybe converet this to a map?
+    // std::map<string, Command*> basic_commands{
+    //     {"chprompt", new chpromptCommand(cmd_line)},
+    //     {"showpid", new showpidCommand(cmd_line)},
+    //     {"pwd", new pwdCommand(cmd_line)},
+    //     {"cd", new cdCommand(cmd_line)},
+    //     {"fg", new fgCommand(cmd_line)},
+    // };
+
+    // TODO: if nothing works - check in the alias table!
+
+    if (firstWord.compare("chprompt") == 0){
         return new chpromptCommand(cmd_line);
     }
     else if (firstWord.compare("showpid") == 0) {
@@ -208,7 +220,11 @@ Command *SmallShell::CreateCommand(const char *cmd_line) {
     else {
         return new ExternalCommand(cmd_line);
     } */
+
     //TODO: free the space allocated for args
+    for (int i = 0; i < count; ++i){
+        free(args[i]);
+    }
     return nullptr;
 }
 

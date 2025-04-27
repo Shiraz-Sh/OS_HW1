@@ -146,8 +146,10 @@ public:
     Command *CreateCommand(const char *cmd_line);
 
     SmallShell(SmallShell const &) = delete; // disable copy ctor
-    void operator=(SmallShell const &) = delete; // disable = operator
-    static SmallShell &getInstance() // make SmallShell singleton
+
+    void operator=(SmallShell const&) = delete; // disable = operator
+
+    static SmallShell& getInstance() // make SmallShell singleton
     {
         static SmallShell instance; // Guaranteed to be destroyed.
         // Instantiated on first use.
@@ -167,5 +169,3 @@ public:
 
     // TODO: add extra methods as needed
 };
-
-#endif //SMASH_COMMAND_H_

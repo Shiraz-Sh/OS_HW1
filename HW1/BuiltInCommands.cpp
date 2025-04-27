@@ -1,9 +1,11 @@
 
 #include <bits/stdc++.h>
 #include <unistd.h>
+#include <regex>
+#include <sys/wait.h>
 #include "BuiltInCommands.h"
 #include "JobsList.h"
-#include <sys/wait.h>
+#include "AliasTable.hpp"
 
 #define MAX_PATH 200
 
@@ -144,4 +146,48 @@ void fgCommand::bringJobToForeground(int jobID) {
         perror("smash error: waitpid failed");
         return;
     }
+}
+
+void quitCommand::execute(){
+    prepare();
+
+    // if optional argument kill is given
+    if (count == 2 && strcmp(args[1], "kill") == 0){
+        jobs->killAllJobs();
+    }
+
+    cleanup();
+
+    exit(0);
+}
+
+void aliasCommand::execute(){
+    prepare();
+
+    AliasTable& table = AliasTable::getInstance();
+
+    // For one argument just print all aliases
+    if (count == 1){
+        std::cout << table;
+        return;
+    }
+
+    if (count != 2){
+        // TODO: if more than one argument provided???
+    }
+
+    // Check if input is valid
+    std::regex pattern(R"(^([a-zA-Z0-9_]+)='([^']*)'$)");
+    std::smatch matches;
+
+    if (!std::regex_match(args[1], matches, pattern)){
+        std::cout << "smash error: alias: invalid alias format" << std::endl;
+        return;
+    }
+
+    std::string name = matches[1];
+    std::string command = matches[2];
+    table.alias(name, command.c_str());
+
+    cleanup();
 }
