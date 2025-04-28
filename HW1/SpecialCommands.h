@@ -34,11 +34,11 @@ public:
     void execute() override;
 };
 
-class whoamiCommand : public Command {
+class WhoamiCommand : public Command {
 public:
-    whoamiCommand(const char *cmd_line) : Command(cmd_line) {};
+    WhoamiCommand(const char *cmd_line) : Command(cmd_line) {};
 
-    virtual ~whoamiCommand() {
+    virtual ~WhoamiCommand() {
     }
 
     void execute() override;

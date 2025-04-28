@@ -184,13 +184,13 @@ Command* SmallShell::CreateCommand(const char* cmd_line){
         {"showpid", new ShowpidCommand(cmd_line)},
         {"pwd", new PwdCommand(cmd_line)},
         {"cd", new CdCommand(cmd_line)},
-        {"jobs", new JobsCommand(cmd_line)},
+        // {"jobs", new JobsCommand(cmd_line)},
         {"fg", new FgCommand(cmd_line)},
         {"quit", new QuitCommand(cmd_line)},
         // {"kill", new KillCommand(cmd_line)},
-        {"alias", new AliasCommand(cmd_line)},
+        {"alias", new AliasCommand(cmd_line)} // ,
         // {"unalias", new UnAliasCommand(cmd_line)},
-        {"unsetenv", new UnSetEnvCommand(cmd_line)} // ,
+        // {"unsetenv", new UnSetEnvCommand(cmd_line)} ,
         // {"watchproc", new WatchProcCommand(cmd_line)}
     };
 
@@ -200,42 +200,38 @@ Command* SmallShell::CreateCommand(const char* cmd_line){
         // {"netinfo", new NetInfoCommand(cmd_line)},
     };
 
-    // check if built-in command
-    if (std::find(builtin_cmds.begin(), builtin_cmds.end(), firstWord) != builtin_cmds.end()){
-        return builtin_cmds[firstWord];
+    Command* res = nullptr;
+    if (builtin_cmds.find(firstWord) != builtin_cmds.end()){        // check if built-in command
+        res = builtin_cmds[firstWord];
     }
-
-    // check if special command
-    if (std::find(special_cmds.begin(), special_cmds.end(), firstWord) != special_cmds.end()){
-        return special_cmds[firstWord];
+    else if (special_cmds.find(firstWord) != special_cmds.end()){   // check if special command
+        res = special_cmds[firstWord];
     }
-
-    // check for io redirection or pipe usage
-    if (checkIORedirection(args, count)){
-        return new RedirectionCommand(cmd_line);
+    else if (checkIORedirection(args, count)){                      // check for io redirection or pipe usage
+        res = new RedirectionCommand(cmd_line);
     }
     else if (checkPipe(args, count)){
-        return new PipeCommand(cmd_line);
+        res = new PipeCommand(cmd_line);
     }
-
-    // TODO: if nothing works - check in the alias table!
-    if (alias_table.query(firstWord)){
-        return CreateCommand();
+    else if (alias_table.query(firstWord).first){                   // check for aliases
+        res = CreateCommand(alias_table.query(firstWord).second);
     }
-
-    // check for external simple / complex command
-    if (checkWildcards(cmd_line)){
-        return new complexExternalCommand(cmd_line);
+    else if (checkWildcards(cmd_line)){                             // check for external simple / complex command
+        res = new complexExternalCommand(cmd_line);
     }
     else{
         // TODO: return simple external command
     }
-
+    
+    if (res == nullptr){
+        // TODO: make sure we do not reach line
+        std::cout << "Command not yet implemented" << std::endl;
+    }
     // free the space allocated for args
     for (int i = 0; i < count; ++i){
         free(args[i]);
     }
-    return nullptr;
+    return res;
 }
 
 void SmallShell::executeCommand(const char *cmd_line) {

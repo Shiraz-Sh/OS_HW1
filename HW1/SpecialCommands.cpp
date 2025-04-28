@@ -11,7 +11,7 @@
 
 #define MAX_ARGS 20
 
-void whoamiCommand::execute() {
+void WhoamiCommand::execute() {
     this->prepare();
     // getuid() gets the current userID and getpwuid uses the ID to get details on user
     struct passwd *user = getpwuid(getuid());

@@ -12,7 +12,7 @@
 
 using namespace std;
 
-void chpromptCommand::execute() {
+void ChpromptCommand::execute() {
     this->prepare();
     if (count >= 2) {
         SmallShell::getInstance().setChprompt(strcat(args[1], "> "));
@@ -22,7 +22,7 @@ void chpromptCommand::execute() {
     this->cleanup();
 }
 
-void showpidCommand::execute() {
+void ShowpidCommand::execute() {
     this->prepare();
     pid_t pid = getpid();
     if (pid == -1) {
@@ -159,7 +159,7 @@ void QuitCommand::execute(){
 
     // if optional argument kill is given
     if (count == 2 && strcmp(args[1], "kill") == 0){
-        jobs->killAllJobs();
+        JobsList::getInstance().killAllJobs();
     }
 
     cleanup();
@@ -205,8 +205,5 @@ void WatchprocCommand::execute() {
         this->cleanup();
         return;
     }
-
-
-
-    std::cout << "PID: " << args[1] << " | CPU Usage: " << cpuUsage << " | Memory Usage: " << memUsage << std::endl;
+    // std::cout << "PID: " << args[1] << " | CPU Usage: " << cpuUsage << " | Memory Usage: " << memUsage << std::endl;
 }

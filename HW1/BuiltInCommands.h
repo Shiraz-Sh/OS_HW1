@@ -2,20 +2,20 @@
 
 #include "Commands.h"
 
-class chpromptCommand : public BuiltInCommand {
+class ChpromptCommand : public BuiltInCommand {
 public:
-    chpromptCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {};
+    ChpromptCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {};
 
-    virtual ~chpromptCommand() {};
+    virtual ~ChpromptCommand() {};
 
     void execute() override;
 };
 
-class showpidCommand : public BuiltInCommand {
+class ShowpidCommand : public BuiltInCommand {
 public:
-    showpidCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {};
+    ShowpidCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {};
 
-    virtual ~showpidCommand() {};
+    virtual ~ShowpidCommand() {};
 
     void execute() override;
 };
@@ -60,13 +60,11 @@ public:
     void bringJobToForeground(int jobID);
 };
 
-class jobsCommand : public BuiltInCommand{};
+class JobsCommand : public BuiltInCommand{};
 
 class QuitCommand : public BuiltInCommand{
-private:
-    JobsList* jobs;
 public:
-    QuitCommand(const char* cmd_line, JobsList* jobs) : BuiltInCommand(cmd_line), jobs(jobs){};
+    QuitCommand(const char* cmd_line) : BuiltInCommand(cmd_line){};
 
     virtual ~QuitCommand() = default;
 
