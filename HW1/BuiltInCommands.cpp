@@ -120,7 +120,7 @@ void fgCommand::execute() {
     SmallShell& smash = SmallShell::getInstance();
     if (args[1] != nullptr) {
         int givenGobID = std::stoi(args[1]);
-        if (smash.jobsList.getJobById(givenGobID) == nullptr) { // If job-id was specified with a job id that does not exist
+        if (smash.jobs_list.getJobById(givenGobID) == nullptr) { // If job-id was specified with a job id that does not exist
             std::cerr << "smash error: fg: job-id " << givenGobID << " does not exist" << std::endl;
             this->cleanup();
             return;
@@ -128,13 +128,13 @@ void fgCommand::execute() {
         // brings the givenJobID to foreground
         bringJobToForeground(givenGobID);
     } else { // If no other argument was given
-        if (smash.jobsList.isJobsListEmpty()) {
+        if (smash.jobs_list.isJobsListEmpty()) {
             std::cerr << "smash error: fg: jobs list is empty" << std::endl;
             this->cleanup();
             return;
         }
         // brings the job with the maximal job id in the jobs list to foregrund
-        bringJobToForeground(smash.jobsList.getMaxJobID()->getJobID());
+        bringJobToForeground(smash.jobs_list.getMaxJobID()->getJobID());
     }
     this->cleanup();
 }
@@ -142,7 +142,7 @@ void fgCommand::execute() {
 void fgCommand::bringJobToForeground(int jobID) {
     SmallShell& smash = SmallShell::getInstance();
     // smash waits for certain job to finish, meaning it will be brought to foreground
-    pid_t wpid = waitpid(smash.jobsList.getJobById(jobID)->getJobPid(), smash.jobsList.getJobById(jobID)->getWstatus(), 0);
+    pid_t wpid = waitpid(smash.jobs_list.getJobById(jobID)->getJobPid(), smash.jobs_list.getJobById(jobID)->getWstatus(), 0);
     if (wpid == -1) {
         perror("smash error: waitpid failed");
         return;

@@ -4,13 +4,16 @@
 #include <vector>
 #include <string>
 #include "JobsList.h"
+#include "AliasTable.hpp"
 
 #define MAX_ARGS 20
 
 #define COMMAND_MAX_LENGTH (200)
 #define COMMAND_MAX_ARGS (20)
 
-class Command {
+class AliasTable;
+
+class Command{
     // TODO: Add your data members
     const char* cmd_line;
 protected:
@@ -141,7 +144,8 @@ private:
 public:
     char* oldPWD = nullptr;
 
-    JobsList& jobsList;
+    JobsList& jobs_list;
+    AliasTable& alias_table;
 
     Command *CreateCommand(const char *cmd_line);
 

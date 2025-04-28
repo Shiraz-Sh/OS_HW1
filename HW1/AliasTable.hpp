@@ -1,6 +1,8 @@
 #pragma once
 
+#include <vector>
 #include <map>
+#include <utility>
 #include <ostream>
 #include "Commands.h"
 
@@ -9,16 +11,17 @@
  */
 class AliasTable{
 private:
-    std::map<std::string, const char*> aliases;
+    std::map<std::string, const char*> aliases;     // store aliases and their command
+    std::vector<std::string> aliases_order;         // store the aliases by order they where joined
 
     AliasTable() = default;
 
-    static bool init_flag; // false by default
-    static const std::vector<std::string> forbidden; // TODO: fill this array 
+    static bool init_flag;
+    static const std::vector<std::string> forbidden;
 public:
     ~AliasTable() = default;
 
-    AliasTable(AliasTable const&) = delete; // disable copy ctor
+    AliasTable(AliasTable const&) = delete;     // disable copy ctor
 
     void operator=(AliasTable const&) = delete; // disable = operator
 
@@ -50,9 +53,9 @@ public:
     /**
      * Checks if an alias with a given name exists
      * @param name the alias name
-     * @return if there exsits such alias
+     * @return if there exists an alias: `true, command`. else: `false, ""`
      */
-    bool query(std::string name);
+    std::pair<bool, const char*> query(std::string name);
 
     /**
      * Overrides the << operator.

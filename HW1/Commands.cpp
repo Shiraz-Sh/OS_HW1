@@ -4,6 +4,7 @@
 #include <vector>
 #include <sstream>
 #include <map>
+#include <algorithm>
 #include <sys/wait.h>
 #include <iomanip>
 #include "Commands.h"
@@ -159,7 +160,7 @@ void complexExternalCommand::execute() {
 
 std::string SmallShell::chprompt;
 
-SmallShell::SmallShell(): jobsList(JobsList::getInstance()) {
+SmallShell::SmallShell() : jobs_list(JobsList::getInstance()), alias_table(AliasTable::getInstance()){
 // TODO: add your implementation
 }
 
@@ -178,50 +179,59 @@ Command* SmallShell::CreateCommand(const char* cmd_line){
     int count = _parseCommandLine(cmd_line, args); // allocate memory for args
 
     // TODO: maybe converet this to a map?
-    // std::map<string, Command*> basic_commands{
-    //     {"chprompt", new chpromptCommand(cmd_line)},
-    //     {"showpid", new showpidCommand(cmd_line)},
-    //     {"pwd", new pwdCommand(cmd_line)},
-    //     {"cd", new cdCommand(cmd_line)},
-    //     {"fg", new fgCommand(cmd_line)},
-    // };
+    std::map<string, Command*> builtin_cmds{
+        {"chprompt", new ChpromptCommand(cmd_line)},
+        {"showpid", new ShowpidCommand(cmd_line)},
+        {"pwd", new PwdCommand(cmd_line)},
+        {"cd", new CdCommand(cmd_line)},
+        {"jobs", new JobsCommand(cmd_line)},
+        {"fg", new FgCommand(cmd_line)},
+        {"quit", new QuitCommand(cmd_line)},
+        // {"kill", new KillCommand(cmd_line)},
+        {"alias", new AliasCommand(cmd_line)},
+        // {"unalias", new UnAliasCommand(cmd_line)},
+        {"unsetenv", new UnSetEnvCommand(cmd_line)} // ,
+        // {"watchproc", new WatchProcCommand(cmd_line)}
+    };
 
-    // TODO: if nothing works - check in the alias table!
+    std::map<string, Command*> special_cmds{
+        // {"du", new DuCommand(cmd_line)},
+        {"whoami", new WhoamiCommand(cmd_line)} //,
+        // {"netinfo", new NetInfoCommand(cmd_line)},
+    };
 
-    if (firstWord.compare("chprompt") == 0){
-        return new chpromptCommand(cmd_line);
+    // check if built-in command
+    if (std::find(builtin_cmds.begin(), builtin_cmds.end(), firstWord) != builtin_cmds.end()){
+        return builtin_cmds[firstWord];
     }
-    else if (firstWord.compare("showpid") == 0) {
-        return new showpidCommand(cmd_line);
+
+    // check if special command
+    if (std::find(special_cmds.begin(), special_cmds.end(), firstWord) != special_cmds.end()){
+        return special_cmds[firstWord];
     }
-    else if (firstWord.compare("pwd") == 0) {
-        return new pwdCommand(cmd_line);
-    }
-    else if (firstWord.compare("cd") == 0) {
-        return new cdCommand(cmd_line);
-    }
-    else if (firstWord.compare("fg") == 0) {
-        return new fgCommand(cmd_line);
-    }
-    else if (firstWord.compare("whoami") == 0) {
-        return new whoamiCommand(cmd_line);
-    }
-    // TODO: add checks for all other builtInCommands
-    else if (checkWildcards(cmd_line)) {
-        return new complexExternalCommand(cmd_line);
-    }
-    else if (checkIORedirection(args, count)) {
+
+    // check for io redirection or pipe usage
+    if (checkIORedirection(args, count)){
         return new RedirectionCommand(cmd_line);
     }
-    else if (checkPipe(args, count)) {
+    else if (checkPipe(args, count)){
         return new PipeCommand(cmd_line);
     }
-    /*
-    else {
-        return new ExternalCommand(cmd_line);
-    } */
 
-    //TODO: free the space allocated for args
+    // TODO: if nothing works - check in the alias table!
+    if (alias_table.query(firstWord)){
+        return CreateCommand();
+    }
+
+    // check for external simple / complex command
+    if (checkWildcards(cmd_line)){
+        return new complexExternalCommand(cmd_line);
+    }
+    else{
+        // TODO: return simple external command
+    }
+
+    // free the space allocated for args
     for (int i = 0; i < count; ++i){
         free(args[i]);
     }

@@ -3,35 +3,50 @@
 #include "AliasTable.hpp"
 
 bool AliasTable::init_flag = false;
-const std::vector<std::string> AliasTable::forbidden = { "quit", "kill", "pwd" };
+const std::vector<std::string> AliasTable::forbidden = {
+    // built-in commands
+    "chpromp",  "showpid" ,     "pwd",
+    "cd",       "jobs",         "fg",
+    "quit",     "kill",         "alias",
+    "unalias",  "unsetenv",     "watchproc",
+
+    // special commands
+    "du",       "whoami",       "netinfo"
+};
 
 bool AliasTable::alias(std::string name, const char* command){
-    if (query(name) || std::find(forbidden.begin(), forbidden.end(), name) != forbidden.end()){
+    if (query(name).first || std::find(forbidden.begin(), forbidden.end(), name) != forbidden.end()){
         std::cout << "smash error: alias: " << name << " already exists or is a reserved command" << std::endl;
         return false;
     }
 
     aliases[name] = command;
+    aliases_order.push_back(name);
     return true;
 }
 
 bool AliasTable::unalias(std::string name){
-    if (!query(name)){
+    if (!query(name).first){
         std::cout << "smash error: unalias: " << name << " alias does not exist" << std::endl;
         return false;
     }
 
     aliases.erase(name);
+    aliases_order.erase(std::find(aliases_order.begin(), aliases_order.end(), name));
     return true;
 }
 
-bool AliasTable::query(std::string name){
-    return aliases.find(name) != aliases.end();
+std::pair<bool, const char*> AliasTable::query(std::string name){
+    const char* cmd = "";
+    if (aliases.find(name) != aliases.end()){
+        return { true, (*aliases.find(name)).second };
+    }
+    return { false, "" };
 }
 
 std::ostream& operator<<(std::ostream& os, const AliasTable& t){
-    for (const auto& item : t.aliases){
-        os << item.first << "=\"" << item.second << "\"" << std::endl;
+    for (const auto& name : t.aliases_order){
+        os << name << "=\"" << t.aliases.at(name) << "\"" << std::endl;
     }
     return os;
 }

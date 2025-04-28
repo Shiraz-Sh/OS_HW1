@@ -78,7 +78,7 @@ void PipeCommand::execute() {
     }
 
     pid_t pid1 = fork();
-    if (pid1 == -1) {
+    if (pid1 == -1){
         perror("smash error: fork failed");
         this->cleanup();
         return;
