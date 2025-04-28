@@ -20,20 +20,20 @@ public:
     void execute() override;
 };
 
-class pwdCommand : public BuiltInCommand {
+class PwdCommand : public BuiltInCommand {
 public:
-    pwdCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {};
+    PwdCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {};
 
-    virtual ~pwdCommand() {};
+    virtual ~PwdCommand() {};
 
     void execute() override;
 };
 
-class cdCommand : public BuiltInCommand {
+class CdCommand : public BuiltInCommand {
 public:
-    cdCommand(const char *cmd_line) : BuiltInCommand(cmd_line){};
+    CdCommand(const char *cmd_line) : BuiltInCommand(cmd_line){};
 
-    virtual ~cdCommand() {};
+    virtual ~CdCommand() {};
 
     void execute() override;
 
@@ -45,11 +45,11 @@ public:
     bool savingLastWorkingDict();
 };
 
-class fgCommand : public BuiltInCommand{
+class FgCommand : public BuiltInCommand{
 public:
-    fgCommand(const char *cmd_line) : BuiltInCommand(cmd_line){};
+    FgCommand(const char *cmd_line) : BuiltInCommand(cmd_line){};
 
-    virtual ~fgCommand() {};
+    virtual ~FgCommand() {};
 
     void execute() override;
 
@@ -58,34 +58,35 @@ public:
      * bring the specific job to foreground and wait for him
      */
     void bringJobToForeground(int jobID);
-
-    /**
-     * cheak if a specific string is a positive number
-     * @param s
-     * @return
-     */
-    bool isNumber(const char* s);
 };
 
 class jobsCommand : public BuiltInCommand{};
 
-class quitCommand : public BuiltInCommand{
+class QuitCommand : public BuiltInCommand{
 private:
     JobsList* jobs;
 public:
-    quitCommand(const char* cmd_line, JobsList* jobs) : BuiltInCommand(cmd_line), jobs(jobs){};
+    QuitCommand(const char* cmd_line, JobsList* jobs) : BuiltInCommand(cmd_line), jobs(jobs){};
 
-    virtual ~quitCommand() = default;
+    virtual ~QuitCommand() = default;
 
     void execute() override;
 };
 
-class aliasCommand : public BuiltInCommand{
+class AliasCommand : public BuiltInCommand{
 public:
-    aliasCommand(const char* cmd_line) : BuiltInCommand(cmd_line){};
+    AliasCommand(const char* cmd_line) : BuiltInCommand(cmd_line){};
 
-    virtual ~aliasCommand() = default;
+    virtual ~AliasCommand() = default;
 
     void execute() override;
 };
 
+class WatchprocCommand : public BuiltInCommand{
+public:
+    WatchprocCommand(const char* cmd_line) : BuiltInCommand(cmd_line){};
+
+    virtual ~WatchprocCommand() = default;
+
+    void execute() override;
+};

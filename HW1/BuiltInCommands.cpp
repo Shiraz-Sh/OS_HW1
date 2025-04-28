@@ -34,7 +34,7 @@ void showpidCommand::execute() {
     this->cleanup();
 }
 
-void pwdCommand::execute() {
+void PwdCommand::execute() {
     this->prepare();
     char* cwd = getcwd(nullptr, 0);  // let getcwd allocate enough memory
     if (cwd == nullptr) {
@@ -47,7 +47,7 @@ void pwdCommand::execute() {
     this->cleanup();
 }
 
-void cdCommand::execute() {
+void CdCommand::execute() {
     this->prepare();
     if (count > 2) {  // If more than one argument was provided
         std::cerr << "smash error: cd: too many arguments" << std::endl;
@@ -86,7 +86,7 @@ void cdCommand::execute() {
     this->cleanup();
 }
 
-bool cdCommand::savingLastWorkingDict() {
+bool CdCommand::savingLastWorkingDict() {
     SmallShell& smash = SmallShell::getInstance();
     if (smash.oldPWD != nullptr) {
         free(smash.oldPWD);
@@ -100,7 +100,12 @@ bool cdCommand::savingLastWorkingDict() {
     return true;
 }
 
-bool fgCommand::isNumber(const char* s) {
+/**
+* cheak if a specific string is a positive number
+* @param s
+* @return
+*/
+bool isNumber(const char* s) {
     if (!s || *s == '\0') return false;
     for (int i = 0; s[i]; ++i) {
         if (!std::isdigit(s[i])) return false;
@@ -109,7 +114,7 @@ bool fgCommand::isNumber(const char* s) {
     return true;
 }
 
-void fgCommand::execute() {
+void FgCommand::execute() {
     this->prepare();
     if (count > 2 ||!isNumber(args[1])) {  // If more than one argument was provided / the format of the arguments isn't correct
         std::cerr << "smash error: fg: invalid arguments" << std::endl;
@@ -139,7 +144,7 @@ void fgCommand::execute() {
     this->cleanup();
 }
 
-void fgCommand::bringJobToForeground(int jobID) {
+void FgCommand::bringJobToForeground(int jobID) {
     SmallShell& smash = SmallShell::getInstance();
     // smash waits for certain job to finish, meaning it will be brought to foreground
     pid_t wpid = waitpid(smash.jobs_list.getJobById(jobID)->getJobPid(), smash.jobs_list.getJobById(jobID)->getWstatus(), 0);
@@ -149,7 +154,7 @@ void fgCommand::bringJobToForeground(int jobID) {
     }
 }
 
-void quitCommand::execute(){
+void QuitCommand::execute(){
     prepare();
 
     // if optional argument kill is given
@@ -162,7 +167,7 @@ void quitCommand::execute(){
     exit(0);
 }
 
-void aliasCommand::execute(){
+void AliasCommand::execute(){
     prepare();
 
     AliasTable& table = AliasTable::getInstance();
@@ -192,4 +197,16 @@ void aliasCommand::execute(){
     table.alias(name, command.c_str());
 
     cleanup();
+}
+
+void WatchprocCommand::execute() {
+    if (count > 2 ||!isNumber(args[1])) {  // If more than one argument was provided / the format of the arguments isn't correct
+        std::cerr << "smash error: watchproc: invalid arguments" << std::endl;
+        this->cleanup();
+        return;
+    }
+
+
+
+    std::cout << "PID: " << args[1] << " | CPU Usage: " << cpuUsage << " | Memory Usage: " << memUsage << std::endl;
 }
