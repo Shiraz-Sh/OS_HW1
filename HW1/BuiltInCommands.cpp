@@ -2,6 +2,7 @@
 #include <bits/stdc++.h>
 #include <unistd.h>
 #include <regex>
+#include <cstddef>
 #include <sys/wait.h>
 #include "BuiltInCommands.h"
 #include "JobsList.h"
@@ -177,10 +178,11 @@ void aliasCommand::execute(){
     }
 
     // Check if input is valid
-    std::regex pattern(R"(^([a-zA-Z0-9_]+)='([^']*)'$)");
+    std::regex pattern("(^([a-zA-Z0-9_]+)='([^']*)'$)");
     std::smatch matches;
+    std::string str(args[1]);
 
-    if (!std::regex_match(args[1], matches, pattern)){
+    if (!std::regex_match(str, matches, pattern)){
         std::cout << "smash error: alias: invalid alias format" << std::endl;
         return;
     }

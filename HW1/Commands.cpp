@@ -159,7 +159,7 @@ void complexExternalCommand::execute() {
 
 std::string SmallShell::chprompt;
 
-SmallShell::SmallShell() {
+SmallShell::SmallShell(): jobsList(JobsList::getInstance()) {
 // TODO: add your implementation
 }
 

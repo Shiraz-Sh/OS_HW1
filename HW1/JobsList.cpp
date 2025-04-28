@@ -3,14 +3,19 @@
 #include "Commands.h"
 #include <signal.h>
 #include <sys/types.h>
+#include <unistd.h>
+
+
+bool JobsList::init_flag = false;
+
 
 JobsList::~JobsList(){
     // TODO: clean up if needed
 }
 
 bool JobsList::isJobsListEmpty(){
-    for (const auto& [job_id, entry] : jobs)
-        if (kill(entry.getJobPid(), 0) != ESRCH) //check if a job didn't finish
+    for (const auto& item : jobs)
+        if (kill(item.second.getJobPid(), 0) != ESRCH) //check if a job didn't finish
             return false;
     return true;
 }
@@ -19,10 +24,10 @@ JobsList::JobEntry* JobsList::getMaxJobID() {
     int max_id = 0;
     JobEntry* res = nullptr;
 
-    for (const auto& [job_id, entry] : jobs)
-        if (kill(entry.getJobPid(), 0) != ESRCH && max_id < job_id){ //check if a job didn't finish
-            max_id = job_id;
-            res = &jobs[job_id];
+    for (const auto& item : jobs)
+        if (kill(item.second.getJobPid(), 0) != ESRCH && max_id < item.first){ //check if a job didn't finish
+            max_id = item.first;
+            res = &jobs[item.first];
         }
     return res;
 }
@@ -47,3 +52,5 @@ void JobsList::addJob(Command *cmd, bool isStopped) {
         // parent proc
     }
 }
+
+void JobsList::killAllJobs(){}

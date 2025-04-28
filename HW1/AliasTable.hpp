@@ -9,12 +9,12 @@
  */
 class AliasTable{
 private:
-    static std::map<std::string, const char*> aliases;
+    std::map<std::string, const char*> aliases;
 
     AliasTable() = default;
 
-    static bool init_flag; // flase by default
-    static const std::vector<std::string> forbidden{"quit", "kill", "pwd" }; // TODO: fill this array 
+    static bool init_flag; // false by default
+    static const std::vector<std::string> forbidden; // TODO: fill this array 
 public:
     ~AliasTable() = default;
 

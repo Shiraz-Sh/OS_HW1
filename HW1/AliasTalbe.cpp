@@ -2,6 +2,9 @@
 #include <algorithm>
 #include "AliasTable.hpp"
 
+bool AliasTable::init_flag = false;
+const std::vector<std::string> AliasTable::forbidden = { "quit", "kill", "pwd" };
+
 bool AliasTable::alias(std::string name, const char* command){
     if (query(name) || std::find(forbidden.begin(), forbidden.end(), name) != forbidden.end()){
         std::cout << "smash error: alias: " << name << " already exists or is a reserved command" << std::endl;
@@ -27,8 +30,8 @@ bool AliasTable::query(std::string name){
 }
 
 std::ostream& operator<<(std::ostream& os, const AliasTable& t){
-    for (const auto& [name, command] : t.aliases){
-        os << name << "=\"" << command << "\"" << std::endl;
+    for (const auto& item : t.aliases){
+        os << item.first << "=\"" << item.second << "\"" << std::endl;
     }
     return os;
 }

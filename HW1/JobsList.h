@@ -21,18 +21,37 @@ public:
     };
 
 private:
+    static bool init_flag;
+
     // TODO: Add your data members
     std::map<int, JobEntry> jobs;
     int job_cnt = 0;
-public:
-    JobsList() = default;
 
+    JobsList() = default;
+public:
     ~JobsList();
+
+    JobsList(JobsList const&) = delete; // disable copy ctor
+
+    void operator=(JobsList const&) = delete; // disable = operator
+
+    static JobsList& getInstance(){
+        static JobsList instance; // Guaranteed to be destroyed.
+
+        // Instantiated on first use.
+        if (!init_flag){
+            init_flag = true;
+        }
+        return instance;
+    }
 
     // TODO: I assumed that addJob fork the process itself
     void addJob(Command *cmd, bool isStopped = false);
 
-    void printJobsList();
+    /**
+    * prints to os for each job: `<l_str><pid><r_str> <command + input>&`
+    */
+    void printJobsList(std::ostream& os, std::string l_str, std::string r_str);
 
     /**
     * Kills all jobs and prints: `smash: sending SIGKILL signal to <N> jobs:`

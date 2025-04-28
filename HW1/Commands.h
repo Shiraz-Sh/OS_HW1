@@ -141,7 +141,7 @@ private:
 public:
     char* oldPWD = nullptr;
 
-    JobsList jobsList;
+    JobsList& jobsList;
 
     Command *CreateCommand(const char *cmd_line);
 
