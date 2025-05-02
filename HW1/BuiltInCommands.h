@@ -4,36 +4,36 @@
 
 class ChpromptCommand : public BuiltInCommand {
 public:
-    ChpromptCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {};
+    ChpromptCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {}
 
-    virtual ~ChpromptCommand() {};
+    virtual ~ChpromptCommand() = default;
 
     void execute() override;
 };
 
 class ShowpidCommand : public BuiltInCommand {
 public:
-    ShowpidCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {};
+    ShowpidCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {}
 
-    virtual ~ShowpidCommand() {};
+    virtual ~ShowpidCommand() = default;
 
     void execute() override;
 };
 
 class PwdCommand : public BuiltInCommand {
 public:
-    PwdCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {};
+    PwdCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {}
 
-    virtual ~PwdCommand() {};
+    virtual ~PwdCommand() = default;
 
     void execute() override;
 };
 
 class CdCommand : public BuiltInCommand {
 public:
-    CdCommand(const char *cmd_line) : BuiltInCommand(cmd_line){};
+    CdCommand(const char *cmd_line) : BuiltInCommand(cmd_line){}
 
-    virtual ~CdCommand() {};
+    virtual ~CdCommand() = default;
 
     void execute() override;
 
@@ -47,9 +47,9 @@ public:
 
 class FgCommand : public BuiltInCommand{
 public:
-    FgCommand(const char *cmd_line) : BuiltInCommand(cmd_line){};
+    FgCommand(const char *cmd_line) : BuiltInCommand(cmd_line){}
 
-    virtual ~FgCommand() {};
+    virtual ~FgCommand() = default;
 
     void execute() override;
 
@@ -64,7 +64,7 @@ class JobsCommand : public BuiltInCommand{};
 
 class QuitCommand : public BuiltInCommand{
 public:
-    QuitCommand(const char* cmd_line) : BuiltInCommand(cmd_line){};
+    QuitCommand(const char* cmd_line) : BuiltInCommand(cmd_line){}
 
     virtual ~QuitCommand() = default;
 
@@ -73,7 +73,7 @@ public:
 
 class AliasCommand : public BuiltInCommand{
 public:
-    AliasCommand(const char* cmd_line) : BuiltInCommand(cmd_line){};
+    AliasCommand(const char* cmd_line) : BuiltInCommand(cmd_line){}
 
     virtual ~AliasCommand() = default;
 
@@ -82,9 +82,18 @@ public:
 
 class WatchprocCommand : public BuiltInCommand{
 public:
-    WatchprocCommand(const char* cmd_line) : BuiltInCommand(cmd_line){};
+    WatchprocCommand(const char* cmd_line) : BuiltInCommand(cmd_line){}
 
     virtual ~WatchprocCommand() = default;
+
+    void execute() override;
+};
+
+class UnSetEnvCommand : public BuiltInCommand{
+public:
+    UnSetEnvCommand(const char* cmd_line) : BuiltInCommand(cmd_line){}
+
+    virtual ~UnSetEnvCommand() = default;
 
     void execute() override;
 };

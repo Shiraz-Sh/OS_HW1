@@ -74,8 +74,8 @@ public:
 
     JobsList& jobs_list;
     AliasTable& alias_table;
-
-    Command *CreateCommand(const char *cmd_line);
+    
+    Command* CreateCommand(const char* cmd_line);
 
     SmallShell(SmallShell const &) = delete; // disable copy ctor
 
