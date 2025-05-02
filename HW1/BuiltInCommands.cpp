@@ -258,7 +258,6 @@ bool check_envvar_exists(std::string varname, std::vector<char>& buffer){
 
     while (i < buffer.size()){
         std::string entry(&buffer[i]);
-        std::cout << entry << std::endl;
 
         if (std::strncmp(entry.c_str(), prefix.c_str(), prefix.size()) == 0){
             return true;
