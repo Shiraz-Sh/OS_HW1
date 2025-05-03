@@ -183,16 +183,59 @@ void AliasCommand::execute(){
         return;
     }
 
+    std::vector<std::string> real_args = { std::string(args[0]) };
     if (count != 2){
         // TODO: if more than one argument provided???
+
+        // concatenate string into a line
+        std::stringstream line_s;
+        line_s << args[1];
+        for (int i = 2; i < count; i++){
+            line_s << " " << args[i];
+        }
+
+        // reparse the command
+        bool long_arg = false;
+        std::stringstream arg_buffer;
+        std::string line = line_s.str();
+        
+        for (int i = 0; i < line.size(); i++){
+            char ch = line[i];
+
+            if (!long_arg){
+                if (ch == '\''){
+                    long_arg = true;
+                }
+                else if (std::isspace(ch)){ // if starting a new word push
+                    if (!arg_buffer.str().empty()){
+                        real_args.push_back(arg_buffer.str());
+                        arg_buffer.str(std::string());
+                        arg_buffer.clear();
+                    }
+                    continue;
+                }
+                arg_buffer << ch;
+            }
+            else{
+                arg_buffer << ch;
+                if (ch == '\''){
+                    long_arg = false;
+                }
+            }
+        }
+
+        if (!arg_buffer.str().empty()){
+            real_args.push_back(arg_buffer.str());
+        }
+    }
+    else{
+        real_args.push_back(std::string(args[1]));
     }
 
     // Check if input is valid
-    std::regex pattern("(^([a-zA-Z0-9_]+)='([^']*)'$)");
+    std::regex pattern(R"(^([a-zA-Z0-9_]+)='([^']*)'$)");
     std::smatch matches;
-    std::string str(args[1]);
-
-    if (!std::regex_match(str, matches, pattern)){
+    if (!std::regex_match(real_args[1], matches, pattern)){
         std::cout << "smash error: alias: invalid alias format" << std::endl;
         return;
     }
@@ -306,6 +349,7 @@ std::vector<char> read_environment_record(){
 }
 
 // --------------------------------------------------------------- End of utility funcitons for UnSetEnv ---------------------------------------------------------------
+
 void UnSetEnvCommand::execute(){
     prepare();
 
@@ -337,3 +381,5 @@ void UnSetEnvCommand::execute(){
 
     cleanup();
 }
+
+

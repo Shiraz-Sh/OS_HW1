@@ -11,7 +11,7 @@
  */
 class AliasTable{
 private:
-    std::map<std::string, const char*> aliases;     // store aliases and their command
+    std::map<std::string, std::string> aliases;     // store aliases and their command
     std::vector<std::string> aliases_order;         // store the aliases by order they where joined
 
     AliasTable() = default;
@@ -55,7 +55,7 @@ public:
      * @param name the alias name
      * @return if there exists an alias: `true, command`. else: `false, ""`
      */
-    std::pair<bool, const char*> query(std::string name);
+    std::pair<bool, std::string> query(std::string name);
 
     /**
      * Overrides the << operator.

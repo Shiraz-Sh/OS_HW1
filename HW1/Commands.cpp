@@ -7,10 +7,11 @@
 #include <algorithm>
 #include <sys/wait.h>
 #include <iomanip>
+#include <string>
+
 #include "Commands.h"
 #include "BuiltInCommands.h"
 #include "JobsList.h"
-#include <string>
 #include "SpecialCommands.h"
 
 #define MAX_ARGS 20
@@ -214,7 +215,7 @@ Command* SmallShell::CreateCommand(const char* cmd_line){
         res = new PipeCommand(cmd_line);
     }
     else if (alias_table.query(firstWord).first){                   // check for aliases
-        res = CreateCommand(alias_table.query(firstWord).second);
+        res = CreateCommand(alias_table.query(firstWord).second.c_str());
     }
     else if (checkWildcards(cmd_line)){                             // check for external simple / complex command
         res = new complexExternalCommand(cmd_line);

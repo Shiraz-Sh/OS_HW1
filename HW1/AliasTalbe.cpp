@@ -20,7 +20,7 @@ bool AliasTable::alias(std::string name, const char* command){
         return false;
     }
 
-    aliases[name] = command;
+    aliases[name] = std::string(command);
     aliases_order.push_back(name);
     return true;
 }
@@ -36,10 +36,9 @@ bool AliasTable::unalias(std::string name){
     return true;
 }
 
-std::pair<bool, const char*> AliasTable::query(std::string name){
-    const char* cmd = "";
-    if (aliases.find(name) != aliases.end()){
-        return { true, (*aliases.find(name)).second };
+std::pair<bool, std::string> AliasTable::query(std::string name){
+    if (std::find(aliases_order.begin(), aliases_order.end(), name) != aliases_order.end()){
+        return { true, aliases.at(name) };
     }
     return { false, "" };
 }
