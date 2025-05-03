@@ -8,11 +8,13 @@
 #include <sys/wait.h>
 #include <iomanip>
 #include <string>
+#include <sys/stat.h>
 
 #include "Commands.h"
 #include "BuiltInCommands.h"
 #include "JobsList.h"
 #include "SpecialCommands.h"
+#include "envvar.hpp"
 
 #define MAX_ARGS 20
 
@@ -222,12 +224,9 @@ Command* SmallShell::CreateCommand(const char* cmd_line){
     }
     else{
         // TODO: return simple external command
+        res = new SimpleExternalCommand(cmd_line);
     }
-    
-    if (res == nullptr){
-        // TODO: make sure we do not reach line
-        std::cout << "Command not yet implemented" << std::endl;
-    }
+
     // free the space allocated for args
     for (int i = 0; i < count; ++i){
         free(args[i]);
@@ -241,4 +240,45 @@ void SmallShell::executeCommand(const char *cmd_line) {
     Command* cmd = CreateCommand(cmd_line);
     cmd->execute(); // TODO: needs to be changed and execute on processes that weren't fork.
     // Please note that you must fork smash process for some commands (e.g., external commands....)
+}
+
+void SimpleExternalCommand::execute(){
+    prepare();
+
+    // int stat;
+    pid_t pid = fork();
+    if (pid < 0)
+        perror("could not fork");
+    else if (pid == 0){
+        // child
+        auto path_res = is_envvar("PATH");
+        if (path_res.first){
+            std::string path = path_res.second;
+            std::stringstream ss(path);
+            std::string buffer;
+            char del = ':';
+
+            struct stat sb;
+            while (std::getline(ss, buffer, del)){
+                std::string temp_path = buffer + '/' + args[0];
+                if (stat(temp_path.c_str(), &sb) == 0){
+                    execv(temp_path.c_str(), args);
+                    perror("execv failed");
+                    exit(-1);
+                }
+            }
+        }
+        else{
+            execv(args[0], args);
+            perror("execv failed");
+            exit(-1);
+        }
+    }
+    else{
+        // parent
+        if (wait(nullptr) < 0)
+            perror("wait failed");
+    }
+
+    cleanup();
 }

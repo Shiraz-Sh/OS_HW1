@@ -9,9 +9,11 @@
 #include <string_view>
 #include <vector>
 #include <iostream>
+
 #include "BuiltInCommands.h"
 #include "JobsList.h"
 #include "AliasTable.hpp"
+#include "envvar.hpp"
 
 #define MAX_PATH 200
 
@@ -256,100 +258,6 @@ void WatchprocCommand::execute() {
     // std::cout << "PID: " << args[1] << " | CPU Usage: " << cpuUsage << " | Memory Usage: " << memUsage << std::endl;
 }
 
-// ------------------------------------------------------------------ Utility funcitons for UnSetEnv -------------------------------------------------------------------
-/**
- * Returns the path to the current environment variables state file
- */
-std::string get_environ_path(){
-    pid_t pid = getpid();
-    std::ostringstream oss;
-    oss << "/proc/" << pid << "/environ";
-    return oss.str();
-}
-
-
-/**
- * Remove an environment variable
- * @param varname the variable to remove
- * @return if removal succeeded
- */
-bool remove_environment_variable(std::string varname){
-    for (size_t i = 0; environ[i]; i++){
-        if (std::strncmp(environ[i], varname.c_str(), varname.size()) == 0){
-
-            // Shift all remaining environment pointers one left
-            for (; environ[i]; i++)
-                environ[i] = environ[i + 1];
-            return true;
-        }
-    }
-    return false;
-}
-
-/**
- * Check if the variable is in the environment
- * @param varname the name of the variable to search for
- * @param buffer the state of the environment variables file parsed to chars
- * @returns true if the variable was found
- */
-bool check_envvar_exists(std::string varname, std::vector<char>& buffer){
-    if (buffer.empty())
-        return false;
-
-    const std::string prefix = varname + "=";
-    size_t i = 0;
-
-    while (i < buffer.size()){
-        std::string entry(&buffer[i]);
-
-        if (std::strncmp(entry.c_str(), prefix.c_str(), prefix.size()) == 0){
-            return true;
-        }
-        i += entry.size() + 1;
-    }
-    return false;
-}
-
-/**
- * Reads the entire environment records into a char buffer for later parsing
- * @returns the file parsed to chars
- */
-std::vector<char> read_environment_record(){
-    const std::string path = get_environ_path();
-    std::vector<char> buffer;
-
-    int fd = open(path.c_str(), O_RDONLY);
-    if (fd == -1){
-        std::cerr << "Could not open open the file: " << path << std::endl;
-        return buffer;
-    }
-    
-    const size_t chunk_size = 4096; // I think it is a reasonable size for a chunk
-
-    while (true){
-        size_t current_size = buffer.size();
-        buffer.resize(current_size + chunk_size);
-        ssize_t nread = read(fd, buffer.data() + current_size, chunk_size);
-
-        // EOF encountered
-        if (nread == 0)
-            break; 
-        if (nread < 0){
-            std::cerr << "read error from " << path << std::endl;
-            buffer.clear();
-            break;
-        }
-
-        buffer.resize(current_size + nread);
-        if (nread < static_cast<ssize_t>(chunk_size)) break; // finished reading
-    }
-
-    close(fd);
-    return buffer;
-}
-
-// --------------------------------------------------------------- End of utility funcitons for UnSetEnv ---------------------------------------------------------------
-
 void UnSetEnvCommand::execute(){
     prepare();
 
@@ -362,11 +270,8 @@ void UnSetEnvCommand::execute(){
     for (int i = 1; i < count; i++){
         std::string varname(args[i]);
 
-        // we need to read it every time beacuse it updates after removal
-        std::vector<char> buffer = read_environment_record();
-
         // check the variable exists
-        if (!check_envvar_exists(varname, buffer) || std::count(deleted_variables.begin(), deleted_variables.end(), varname) != 0){
+        if (!is_envvar(varname).first){
             std::cerr << "smash error: unsetenv: " << varname << " does not exist" << std::endl;
             return;
         }
@@ -376,7 +281,6 @@ void UnSetEnvCommand::execute(){
             std::cerr << "Removal of environment variable " << varname << " failed" << std::endl; // This should not occur in any case! 
             return;
         }
-        deleted_variables.push_back(varname);
     }
 
     cleanup();

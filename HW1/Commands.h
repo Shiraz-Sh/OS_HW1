@@ -20,7 +20,7 @@ protected:
     char* args[MAX_ARGS]; // Assumption - up to 20 args
     int count;
 public:
-    Command(const char *cmd_line) : cmd_line(cmd_line) {};
+    Command(const char *cmd_line) : cmd_line(cmd_line) {}
 
     virtual ~Command();
 
@@ -36,30 +36,38 @@ public:
 
 class BuiltInCommand : public Command {
 public:
-    BuiltInCommand(const char *cmd_line) : Command(cmd_line) {};
+    BuiltInCommand(const char *cmd_line) : Command(cmd_line) {}
 
-    virtual ~BuiltInCommand() {
-    }
+    virtual ~BuiltInCommand() = default;
 };
 
 class ExternalCommand : public Command {
 public:
-    ExternalCommand(const char *cmd_line) : Command(cmd_line) {};
+    ExternalCommand(const char *cmd_line) : Command(cmd_line) {}
 
-    virtual ~ExternalCommand() {
-    }
+    virtual ~ExternalCommand() = default;
 
     void execute() override {};
 };
 
 class complexExternalCommand : public ExternalCommand {
 public:
-    complexExternalCommand(const char* cmd_line) : ExternalCommand(cmd_line) {};
+    complexExternalCommand(const char* cmd_line) : ExternalCommand(cmd_line) {}
 
-    virtual ~complexExternalCommand() {};
+    virtual ~complexExternalCommand() = default;
 
     void execute() override;
 };
+
+class SimpleExternalCommand : public ExternalCommand{
+public:
+    SimpleExternalCommand(const char* cmd_line) : ExternalCommand(cmd_line){}
+
+    virtual ~SimpleExternalCommand() = default;
+
+    void execute() override;
+};
+
 
 class JobsList;
 
