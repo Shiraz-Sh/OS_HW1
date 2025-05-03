@@ -7,18 +7,57 @@
 #include <cstdio>
 #include <cstring>
 #include <sys/wait.h>
-#include <cstdlib>
+#include <sstream>
+#include <fcntl.h>
 
 #define MAX_ARGS 20
 
 void WhoamiCommand::execute() {
     this->prepare();
-    // getuid() gets the current userID and getpwuid uses the ID to get details on user
-    struct passwd *user = getpwuid(getuid());
-    if (user == nullptr) {
-        perror("smash error: getpwuid failed");
-    } else {
-        std::cout << user->pw_name << " " << user->pw_dir << std::endl;
+    uid_t uid = getuid();  // current user ID
+
+    int fd = open("/etc/passwd", O_RDONLY);
+    if (fd == -1) {
+        perror("smash error: open failed");
+        this->cleanup();
+        return;
+    }
+
+    constexpr size_t BUF_SIZE = 4096; // On most systems, the memory page size is 4096 bytes
+    char buffer[BUF_SIZE];
+    ssize_t bytes_read;
+    std::string content;
+
+    // Read entire file content into `content`
+    while ((bytes_read = read(fd, buffer, BUF_SIZE)) > 0) {
+        content.append(buffer, bytes_read);
+    }
+    close(fd);
+
+    if (bytes_read == -1) {
+        perror("smash error: read failed");
+        this->cleanup();
+        return;
+    }
+
+    // Parse line-by-line
+    std::istringstream iss(content);
+    std::string line;
+    while (std::getline(iss, line)) {
+        std::istringstream linestream(line);
+        std::string username, x, uid_str, gid, comment, home;
+
+        std::getline(linestream, username, ':');
+        std::getline(linestream, x, ':');
+        std::getline(linestream, uid_str, ':');
+
+        if (std::stoi(uid_str) == uid) { // checks if the user is our user
+            std::getline(linestream, gid, ':');
+            std::getline(linestream, comment, ':');
+            std::getline(linestream, home, ':');
+            std::cout << username << " " << home << std::endl;
+            break;
+        }
     }
     this->cleanup();
 }
