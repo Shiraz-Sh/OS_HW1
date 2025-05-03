@@ -217,7 +217,9 @@ Command* SmallShell::CreateCommand(const char* cmd_line){
         res = new PipeCommand(cmd_line);
     }
     else if (alias_table.query(firstWord).first){                   // check for aliases
-        res = CreateCommand(alias_table.query(firstWord).second.c_str());
+        auto alias_expansion = alias_table.query(firstWord).second;
+        string rest_of_cmd = cmd_s.substr(firstWord.length());
+        res = CreateCommand((alias_expansion + rest_of_cmd).c_str());
     }
     else if (checkWildcards(cmd_line)){                             // check for external simple / complex command
         res = new complexExternalCommand(cmd_line);
@@ -225,6 +227,7 @@ Command* SmallShell::CreateCommand(const char* cmd_line){
     else{
         // TODO: return simple external command
         res = new SimpleExternalCommand(cmd_line);
+        // std::cout << cmd_line << std::endl;
     }
 
     // free the space allocated for args
@@ -245,21 +248,33 @@ void SmallShell::executeCommand(const char *cmd_line) {
 void SimpleExternalCommand::execute(){
     prepare();
 
+    for (int i = 0; i < count; i++){
+        std::cout << args[i] << std::endl;
+    }
+
     // int stat;
     pid_t pid = fork();
     if (pid < 0)
         perror("could not fork");
     else if (pid == 0){
         // child
+
+        // this should catch all the explicit executions of files
+        if (args[0][0] == '.' || args[0][0] == '/'){
+            execv(args[0], args);
+            perror("execv failed");
+            exit(-1);
+        }
+
+        // search for the command in PATH (run the first occurance)
+        // otherwise try to run locally
         auto path_res = is_envvar("PATH");
         if (path_res.first){
-            std::string path = path_res.second;
-            std::stringstream ss(path);
+            std::stringstream path(path_res.second);
             std::string buffer;
-            char del = ':';
 
             struct stat sb;
-            while (std::getline(ss, buffer, del)){
+            while (std::getline(path, buffer, ':')){
                 std::string temp_path = buffer + '/' + args[0];
                 if (stat(temp_path.c_str(), &sb) == 0){
                     execv(temp_path.c_str(), args);
@@ -269,16 +284,14 @@ void SimpleExternalCommand::execute(){
             }
         }
         else{
+            // We wouldn't want to get here...
             execv(args[0], args);
             perror("execv failed");
             exit(-1);
         }
     }
-    else{
-        // parent
-        if (wait(nullptr) < 0)
-            perror("wait failed");
-    }
+    else if (wait(nullptr) < 0)
+        perror("wait failed");
 
     cleanup();
 }
