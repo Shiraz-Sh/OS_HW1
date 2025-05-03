@@ -122,7 +122,7 @@ Command* SmallShell::CreateCommand(const char* cmd_line, bool* run_on_background
         {"fg", new FgCommand(cmd_line)},
         {"quit", new QuitCommand(cmd_line)},
         // {"kill", new KillCommand(cmd_line)},
-        {"alias", new AliasCommand(cmd_line)} ,
+        {"alias", new AliasCommand(cmd_line)},
         {"unalias", new UnAliasCommand(cmd_line)},
         {"unsetenv", new UnSetEnvCommand(cmd_line)},
         {"watchproc", new WatchProcCommand(cmd_line)}
@@ -130,8 +130,8 @@ Command* SmallShell::CreateCommand(const char* cmd_line, bool* run_on_background
 
     std::map<string, Command*> special_cmds{
         // {"du", new DuCommand(cmd_line)},
-        {"whoami", new WhoamiCommand(cmd_line)} //,
-        // {"netinfo", new NetInfoCommand(cmd_line)},
+        {"whoami", new WhoamiCommand(cmd_line)},
+        {"netinfo", new NetInfoCommand(cmd_line)}
     };
 
     

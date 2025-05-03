@@ -44,13 +44,12 @@ public:
     void execute() override;
 };
 
-class NetInfo : public Command {
+class NetInfoCommand : public Command {
     // TODO: Add your data members **BONUS: 10 Points**
 public:
-    NetInfo(const char *cmd_line) : Command(cmd_line) {};
+    NetInfoCommand(const char* cmd_line) : Command(cmd_line){}
 
-    virtual ~NetInfo() {
-    }
+    virtual ~NetInfoCommand() = default;
 
     void execute() override;
 };

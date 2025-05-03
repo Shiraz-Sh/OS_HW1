@@ -8,13 +8,12 @@
 
 #include "JobsList.hpp"
 #include "AliasTable.hpp"
+#include "global_macros.hpp"
 
 #define MAX_ARGS 20
 
 #define COMMAND_MAX_LENGTH (200)
 #define COMMAND_MAX_ARGS (20)
-#define SYSCALL_FAIL(name) \
-    perror(std::string("smash error: " + std::string(name) + " failed").c_str())
 
 class AliasTable;
 

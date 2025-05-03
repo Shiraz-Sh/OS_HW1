@@ -10,6 +10,7 @@
 
 #include "SpecialCommands.hpp"
 #include "parsing_utils.hpp"
+#include "net_utils.hpp"
 
 #define MAX_ARGS 20
 
@@ -228,6 +229,24 @@ void RedirectionCommand::execute() {
     }
 
     wait(nullptr);
+
+    cleanup();
+}
+
+void NetInfoCommand::execute(){
+    prepare();
+
+    if (count == 1){
+        std::cerr << "smash error: netinfo: interface not specified" << std::endl;
+        return;
+    }
+    if (!interface_exists(std::string(args[1]))){
+        std::cerr << "smash error: netinfo: interface " <<  args[1] << " does not exist " << std::endl;
+        return;
+    }
+
+    std::cout << "IP Address: " << get_ip(args[1]) << std::endl;
+    std::cout << "Subnet Mask: " << get_subnet_mask(args[1]) << std::endl;
 
     cleanup();
 }
