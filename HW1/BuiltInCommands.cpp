@@ -239,7 +239,7 @@ void AliasCommand::execute(){
     std::regex pattern(R"(^([a-zA-Z0-9_]+)='([^']*)'$)");
     std::smatch matches;
     if (!std::regex_match(real_args[1], matches, pattern)){
-        std::cout << "smash error: alias: invalid alias format" << std::endl;
+        std::cerr << "smash error: alias: invalid alias format" << std::endl;
         return;
     }
 
@@ -248,6 +248,26 @@ void AliasCommand::execute(){
     table.alias(name, command.c_str());
 
     cleanup();
+}
+
+void UnAliasCommand::execute() {
+    this->prepare();
+    AliasTable& table = AliasTable::getInstance();
+
+    if (count == 1) { // no arguments are provided
+        std::cerr << "smash error: unalias: not enough arguments" << std::endl;
+        this->cleanup();
+        return;
+    }
+
+    for (int i = 1; args[i] != nullptr; ++i) { // loop through arguments
+        if (!table.unalias(std::string(args[i]))) {
+            std::cerr << "smash error: unalias: " << args[i] << " alias does not exist" << std::endl;
+            break;
+        }
+    }
+
+    this->cleanup();
 }
 
 bool WatchProcCommand::get_mem_usage_MB(pid_t pid, double& mem) {
@@ -400,7 +420,7 @@ void UnSetEnvCommand::execute(){
     static std::vector<std::string> deleted_variables;
 
     if (count == 1){
-        std::cout << "smash error: unsetenv: not enough arguments" << std::endl;
+        std::cerr << "smash error: unsetenv: not enough arguments" << std::endl;
     }
 
     for (int i = 1; i < count; i++){

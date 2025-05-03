@@ -189,7 +189,7 @@ Command* SmallShell::CreateCommand(const char* cmd_line){
         {"quit", new QuitCommand(cmd_line)},
         // {"kill", new KillCommand(cmd_line)},
         {"alias", new AliasCommand(cmd_line)} ,
-        // {"unalias", new UnAliasCommand(cmd_line)},
+        {"unalias", new UnAliasCommand(cmd_line)},
         {"unsetenv", new UnSetEnvCommand(cmd_line)},
         {"watchproc", new WatchProcCommand(cmd_line)}
     };

@@ -16,7 +16,7 @@ const std::vector<std::string> AliasTable::forbidden = {
 
 bool AliasTable::alias(std::string name, const char* command){
     if (query(name).first || std::find(forbidden.begin(), forbidden.end(), name) != forbidden.end()){
-        std::cout << "smash error: alias: " << name << " already exists or is a reserved command" << std::endl;
+        std::cerr << "smash error: alias: " << name << " already exists or is a reserved command" << std::endl;
         return false;
     }
 
@@ -27,7 +27,6 @@ bool AliasTable::alias(std::string name, const char* command){
 
 bool AliasTable::unalias(std::string name){
     if (!query(name).first){
-        std::cout << "smash error: unalias: " << name << " alias does not exist" << std::endl;
         return false;
     }
 

@@ -80,6 +80,15 @@ public:
     void execute() override;
 };
 
+class UnAliasCommand : public BuiltInCommand {
+public:
+    UnAliasCommand(const char* cmd_line) : BuiltInCommand(cmd_line){}
+
+    virtual ~UnAliasCommand() = default;
+
+    void execute() override;
+};
+
 class WatchProcCommand : public BuiltInCommand{
 public:
     WatchProcCommand(const char* cmd_line) : BuiltInCommand(cmd_line){}
