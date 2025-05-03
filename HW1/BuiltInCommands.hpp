@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Commands.h"
+#include "Commands.hpp"
 
 class ChpromptCommand : public BuiltInCommand {
 public:

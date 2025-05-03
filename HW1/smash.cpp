@@ -2,8 +2,8 @@
 #include <unistd.h>
 //#include <sys/wait.h>
 #include <signal.h>
-#include "Commands.h"
-#include "signals.h"
+#include "Commands.hpp"
+#include "signals.hpp"
 
 int main(int argc, char *argv[]) {
     if (signal(SIGINT, ctrlCHandler) == SIG_ERR) {

@@ -10,8 +10,8 @@
 #include <vector>
 #include <iostream>
 
-#include "BuiltInCommands.h"
-#include "JobsList.h"
+#include "BuiltInCommands.hpp"
+#include "JobsList.hpp"
 #include "AliasTable.hpp"
 #include "envvar.hpp"
 

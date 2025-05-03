@@ -1,5 +1,5 @@
 
-#include "SpecialCommands.h"
+#include "SpecialCommands.hpp"
 #include <sys/types.h>
 #include <pwd.h>
 #include <iostream>

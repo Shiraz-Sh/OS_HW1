@@ -3,7 +3,8 @@
 
 #include <vector>
 #include <string>
-#include "JobsList.h"
+#include <string.h>
+#include "JobsList.hpp"
 #include "AliasTable.hpp"
 
 #define MAX_ARGS 20
@@ -15,14 +16,16 @@ class AliasTable;
 
 class Command{
     // TODO: Add your data members
-    const char* cmd_line;
+    char* cmd_line;
 protected:
     char* args[MAX_ARGS]; // Assumption - up to 20 args
     int count;
 public:
-    Command(const char *cmd_line) : cmd_line(cmd_line) {}
+    Command(const char *cmd_line) : cmd_line(strdup(cmd_line)) {}
 
-    virtual ~Command();
+    virtual ~Command(){
+        free(cmd_line);
+    }
 
     virtual void execute() = 0;
 

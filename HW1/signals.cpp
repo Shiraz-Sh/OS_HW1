@@ -1,7 +1,7 @@
 #include <iostream>
 #include <signal.h>
-#include "signals.h"
-#include "Commands.h"
+#include "signals.hpp"
+#include "Commands.hpp"
 
 using namespace std;
 

@@ -10,10 +10,10 @@
 #include <string>
 #include <sys/stat.h>
 
-#include "Commands.h"
-#include "BuiltInCommands.h"
-#include "JobsList.h"
-#include "SpecialCommands.h"
+#include "Commands.hpp"
+#include "BuiltInCommands.hpp"
+#include "JobsList.hpp"
+#include "SpecialCommands.hpp"
 #include "envvar.hpp"
 
 #define MAX_ARGS 20
@@ -85,10 +85,7 @@ void _removeBackgroundSign(char *cmd_line) {
     cmd_line[str.find_last_not_of(WHITESPACE, idx) + 1] = 0;
 }
 
-// TODO: Add your implementation for classes in Commands.h
-Command::~Command() {}
-
-void Command::prepare() {
+void Command::prepare(){
     count = _parseCommandLine(this->cmd_line, args);
 }
 
@@ -219,7 +216,12 @@ Command* SmallShell::CreateCommand(const char* cmd_line){
     else if (alias_table.query(firstWord).first){                   // check for aliases
         auto alias_expansion = alias_table.query(firstWord).second;
         string rest_of_cmd = cmd_s.substr(firstWord.length());
-        res = CreateCommand((alias_expansion + rest_of_cmd).c_str());
+        // free the space allocated for args
+        for (int i = 0; i < count; ++i){
+            free(args[i]);
+        }
+        
+        return CreateCommand((alias_expansion + rest_of_cmd).c_str());
     }
     else if (checkWildcards(cmd_line)){                             // check for external simple / complex command
         res = new complexExternalCommand(cmd_line);
@@ -247,10 +249,6 @@ void SmallShell::executeCommand(const char *cmd_line) {
 
 void SimpleExternalCommand::execute(){
     prepare();
-
-    for (int i = 0; i < count; i++){
-        std::cout << args[i] << std::endl;
-    }
 
     // int stat;
     pid_t pid = fork();
