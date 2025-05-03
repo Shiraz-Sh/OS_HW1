@@ -36,7 +36,7 @@ void ShowpidCommand::execute() {
     pid_t pid = getpid();
     if (pid == -1) {
         // If getpid() fails, handle the error
-        perror("smash error: getpid failed");
+        SYSCALL_FAIL("getpid");
     } else {
         std::cout << "smash pid is " << pid << std::endl;
     }
@@ -46,8 +46,8 @@ void ShowpidCommand::execute() {
 void PwdCommand::execute() {
     this->prepare();
     char* cwd = getcwd(nullptr, 0);  // let getcwd allocate enough memory
-    if (cwd == nullptr) {
-        perror("smash error: getcwd failed");
+    if (cwd == nullptr){
+        SYSCALL_FAIL("getcwd");
         this->cleanup();
         return;
     }
@@ -77,8 +77,8 @@ void CdCommand::execute() {
                 free(temp);
                 return;
             }
-            if (chdir(temp) != 0) {
-                perror("smash error: chdir failed");
+            if (chdir(temp) != 0){
+                SYSCALL_FAIL("chdir");
             }
             free(temp);
         }
@@ -88,8 +88,8 @@ void CdCommand::execute() {
             return;
         }
         // Change to given directory
-        if (chdir(args[1]) != 0) {
-            perror("smash error: chdir failed");
+        if (chdir(args[1]) != 0){
+            SYSCALL_FAIL("chdir");
         }
     }
     this->cleanup();
@@ -101,8 +101,8 @@ bool CdCommand::savingLastWorkingDict() {
         free(smash.oldPWD);
     }
     smash.oldPWD = getcwd(nullptr, 0);
-    if (smash.oldPWD == nullptr) {
-        perror("smash error: getcwd failed");
+    if (smash.oldPWD == nullptr){
+        SYSCALL_FAIL("getcwd");
         this->cleanup();
         return false;
     }
@@ -155,9 +155,9 @@ void FgCommand::execute() {
 void FgCommand::bringJobToForeground(int jobID) {
     SmallShell& smash = SmallShell::getInstance();
     // smash waits for certain job to finish, meaning it will be brought to foreground
-    pid_t wpid = waitpid(smash.jobs_list.getJobById(jobID)->getJobPid(), smash.jobs_list.getJobById(jobID)->getWstatus(), 0);
-    if (wpid == -1) {
-        perror("smash error: waitpid failed");
+    pid_t wpid = waitpid(smash.jobs_list.getJobById(jobID)->getJobPid(), nullptr, 0);
+    if (wpid == -1){
+        SYSCALL_FAIL("waitpid");
         return;
     }
 }
@@ -273,8 +273,8 @@ void UnAliasCommand::execute() {
 bool WatchProcCommand::get_mem_usage_MB(pid_t pid, double& mem) {
     std::string path = "/proc/" + std::to_string(pid) + "/status";
     int fd = open(path.c_str(), O_RDONLY);
-    if (fd == -1) {
-        perror("smash error: open failed");
+    if (fd == -1){
+        SYSCALL_FAIL("open");
         return false;
     }
 
@@ -283,8 +283,8 @@ bool WatchProcCommand::get_mem_usage_MB(pid_t pid, double& mem) {
     char buffer[BUF_SIZE];
     ssize_t bytes_read = read(fd, buffer, BUF_SIZE - 1);
     close(fd);
-    if (bytes_read <= 0) {
-        perror("smash error: read failed");
+    if (bytes_read <= 0){
+        SYSCALL_FAIL("read");
         return false;
     }
     buffer[bytes_read] = '\0'; // Null-terminating a String
@@ -308,16 +308,16 @@ bool WatchProcCommand::get_mem_usage_MB(pid_t pid, double& mem) {
 long WatchProcCommand::get_process_cpu_time(pid_t pid) {
     std::string path = "/proc/" + std::to_string(pid) + "/stat";
     int fd = open(path.c_str(), O_RDONLY);
-    if (fd == -1) {
-        perror("smash error: open failed");
+    if (fd == -1){
+        SYSCALL_FAIL("open");
         return false;
     }
 
     char buffer[4096];
     ssize_t sizeRead = read(fd, buffer, sizeof(buffer) - 1);
     close(fd);
-    if (sizeRead <= 0) {
-        perror("smash error: read failed");
+    if (sizeRead <= 0){
+        SYSCALL_FAIL("read");
         return -1;
     }
     buffer[sizeRead] = '\0';
@@ -339,16 +339,16 @@ long WatchProcCommand::get_process_cpu_time(pid_t pid) {
 
 long WatchProcCommand::get_total_cpu_time() {
     int fd = open("/proc/stat", O_RDONLY);
-    if (fd == -1) {
-        perror("smash error: open failed");
+    if (fd == -1){
+        SYSCALL_FAIL("open");
         return false;
     }
 
     char buffer[4096];
     ssize_t sizeRead = read(fd, buffer, sizeof(buffer) - 1);
     close(fd);
-    if (sizeRead <= 0) {
-        perror("smash error: read failed");
+    if (sizeRead <= 0){
+        SYSCALL_FAIL("read");
         return -1;
     }
     buffer[sizeRead] = '\0';
@@ -407,8 +407,9 @@ void WatchProcCommand::execute() {
                   << " | Memory Usage: " << memUsage << " MB " << std::endl;
     } else if (errno == ESRCH || errno == EPERM) {
         std::cerr << "smash error: watchproc: pid " << thisPID << " does not exist" << std::endl;
-    } else {
-        perror("smash error: kill failed");
+    }
+    else{
+        SYSCALL_FAIL("kill");
     }
 
     this->cleanup();
@@ -443,3 +444,6 @@ void UnSetEnvCommand::execute(){
 }
 
 
+void JobsCommand::execute(){
+    JobsList::getInstance().printJobsList("[", "]");
+}

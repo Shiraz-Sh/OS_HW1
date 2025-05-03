@@ -144,14 +144,17 @@ void complexExternalCommand::execute() {
     pid_t pid = fork();
     if (pid == -1) {
         perror("smash error: fork failed");
-    } else if (pid == 0) {         // It's the child process
+    }
+    else if (pid == 0){         // It's the child process
+        setpgrp();
+
         execv("/bin/bash", newArgv);
         // only runs if execv failed, since execv does not return on success
-        perror("smash error: execv failed");
+        SYSCALL_FAIL("execv");
     } else {
         pid_t ret = wait(NULL);
         if (ret == -1)
-            perror("smash error: wait failed");
+            SYSCALL_FAIL("wait");
     }
 
     this->cleanup();
@@ -171,20 +174,22 @@ SmallShell::~SmallShell() {
 /**
 * Creates and returns a pointer to Command class which matches the given command line (cmd_line)
 */
-Command* SmallShell::CreateCommand(const char* cmd_line){
-    // For example:
-    string cmd_s = _trim(string(cmd_line));
+Command* SmallShell::CreateCommand(const char* cmd_line, bool* run_on_background){
+    bool def;
+    if (run_on_background == nullptr)
+        run_on_background = &def;
+
+    string cmd_s = _trim(std::string(cmd_line));
     string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" \n"));
     char* args[MAX_ARGS];
     int count = _parseCommandLine(cmd_line, args); // allocate memory for args
 
-    // TODO: maybe converet this to a map?
-    std::map<string, Command*> builtin_cmds{
+    std::map<string, Command*> builtin_cmds = {
         {"chprompt", new ChpromptCommand(cmd_line)},
         {"showpid", new ShowpidCommand(cmd_line)},
         {"pwd", new PwdCommand(cmd_line)},
         {"cd", new CdCommand(cmd_line)},
-        // {"jobs", new JobsCommand(cmd_line)},
+        {"jobs", new JobsCommand(cmd_line)},
         {"fg", new FgCommand(cmd_line)},
         {"quit", new QuitCommand(cmd_line)},
         // {"kill", new KillCommand(cmd_line)},
@@ -200,9 +205,12 @@ Command* SmallShell::CreateCommand(const char* cmd_line){
         // {"netinfo", new NetInfoCommand(cmd_line)},
     };
 
+    
     Command* res = nullptr;
+
     if (builtin_cmds.find(firstWord) != builtin_cmds.end()){        // check if built-in command
         res = builtin_cmds[firstWord];
+        *run_on_background = false;
     }
     else if (special_cmds.find(firstWord) != special_cmds.end()){   // check if special command
         res = special_cmds[firstWord];
@@ -215,21 +223,14 @@ Command* SmallShell::CreateCommand(const char* cmd_line){
     }
     else if (alias_table.query(firstWord).first){                   // check for aliases
         auto alias_expansion = alias_table.query(firstWord).second;
-        string rest_of_cmd = cmd_s.substr(firstWord.length());
-        // free the space allocated for args
-        for (int i = 0; i < count; ++i){
-            free(args[i]);
-        }
-        
-        return CreateCommand((alias_expansion + rest_of_cmd).c_str());
+        string rest_of_cmd = cmd_s.substr(firstWord.length());        
+        res = CreateCommand((alias_expansion + rest_of_cmd).c_str(), run_on_background);
     }
     else if (checkWildcards(cmd_line)){                             // check for external simple / complex command
         res = new complexExternalCommand(cmd_line);
     }
     else{
-        // TODO: return simple external command
         res = new SimpleExternalCommand(cmd_line);
-        // std::cout << cmd_line << std::endl;
     }
 
     // free the space allocated for args
@@ -239,11 +240,19 @@ Command* SmallShell::CreateCommand(const char* cmd_line){
     return res;
 }
 
-void SmallShell::executeCommand(const char *cmd_line) {
-    // TODO: Add your implementation here
-    // for example:
-    Command* cmd = CreateCommand(cmd_line);
-    cmd->execute(); // TODO: needs to be changed and execute on processes that weren't fork.
+void SmallShell::executeCommand(const char* cmd_line){
+    bool background = _isBackgroundComamnd(cmd_line);
+
+    char* no_bg_sign = strdup(cmd_line);
+    _removeBackgroundSign(no_bg_sign);
+
+    Command* cmd = CreateCommand(no_bg_sign, &background);
+
+    if (background)
+        JobsList::getInstance().addJob(cmd, std::string(cmd_line));
+    else
+        cmd->execute();
+    // TODO: needs to be changed and execute on processes that weren't fork.
     // Please note that you must fork smash process for some commands (e.g., external commands....)
 }
 
@@ -253,9 +262,10 @@ void SimpleExternalCommand::execute(){
     // int stat;
     pid_t pid = fork();
     if (pid < 0)
-        perror("could not fork");
+        perror("fork failed");
     else if (pid == 0){
         // child
+        setpgrp();
 
         // search for the command in PATH (run the first occurance)
         // otherwise try to run locally

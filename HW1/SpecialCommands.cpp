@@ -123,7 +123,9 @@ void PipeCommand::execute() {
         return;
     } else if (pid1 == 0) {      // first son process
         // Redirect
-        if (isSimplePipe) {                   // we use operator '|'
+        setpgrp();
+
+        if (isSimplePipe){                   // we use operator '|'
             dup2(pipefd[1], STDOUT_FILENO);     // replace stdout with pipe's write end
         } else {                               // we use operator '|&'
             dup2(pipefd[1], STDERR_FILENO);      // replace stderr with pipe’s write end
@@ -138,7 +140,10 @@ void PipeCommand::execute() {
         perror("smash error: fork failed");
         this->cleanup();
         return;
-    } else if (pid2 == 0) {       // second son process
+    }
+    else if (pid2 == 0){       // second son process
+        setpgrp();
+        
         // Redirect
         if (isSimplePipe) {                 // we use operator '|'
             dup2(pipefd[0], STDIN_FILENO);     // replace stdin with pipe's read end

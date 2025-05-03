@@ -4,6 +4,8 @@
 #include <vector>
 #include <string>
 #include <string.h>
+#include <utility>
+
 #include "JobsList.hpp"
 #include "AliasTable.hpp"
 
@@ -11,6 +13,8 @@
 
 #define COMMAND_MAX_LENGTH (200)
 #define COMMAND_MAX_ARGS (20)
+#define SYSCALL_FAIL(name) \
+    perror(std::string("smash error: " + std::string(name) + " failed").c_str())
 
 class AliasTable;
 
@@ -86,7 +90,7 @@ public:
     JobsList& jobs_list;
     AliasTable& alias_table;
     
-    Command* CreateCommand(const char* cmd_line);
+    Command* CreateCommand(const char* cmd_line, bool* run_on_background = nullptr);
 
     SmallShell(SmallShell const &) = delete; // disable copy ctor
 

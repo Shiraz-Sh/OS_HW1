@@ -60,7 +60,14 @@ public:
     void bringJobToForeground(int jobID);
 };
 
-class JobsCommand : public BuiltInCommand{};
+class JobsCommand : public BuiltInCommand{
+public:
+    JobsCommand(const char* cmd_line) : BuiltInCommand(cmd_line){}
+
+    virtual ~JobsCommand() = default;
+
+    void execute() override;
+};
 
 class QuitCommand : public BuiltInCommand{
 public:

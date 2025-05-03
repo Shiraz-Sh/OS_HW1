@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <vector>
 
 class Command;
 
@@ -11,29 +12,30 @@ public:
         // TODO: Add your data members
         pid_t pid;
         int job_id;  // job_id will start from 1 and increase each time we add a job
-        int* wstatus;
+        std::string cmd;
     public:
         JobEntry() = default;
-        JobEntry(pid_t pid, int jid, int* status) : pid(pid), job_id(jid), wstatus(status){}
-        pid_t getJobPid() const{ return this->pid; }
-        int getJobID() const { return this->job_id; }
-        int* getWstatus() const {return this->wstatus; } // Indicates a change where details about the child process that has ended will be stored.
+        JobEntry(pid_t pid, int jid, std::string cmd) : pid(pid), job_id(jid), cmd(cmd) {}
+
+        pid_t getJobPid() const{ return pid; }
+        int getJobID() const{ return job_id; }
+        std::string getCommand() const{ return cmd; }
     };
 
 private:
     static bool init_flag;
 
-    // TODO: Add your data members
-    std::map<int, JobEntry> jobs;
+    std::map<int, JobEntry> jobs; // jobs by job-ID
+    std::vector<int> jids;
     int job_cnt = 0;
 
     JobsList() = default;
 public:
     ~JobsList();
 
-    JobsList(JobsList const&) = delete; // disable copy ctor
+    JobsList(JobsList const&) = delete;         // disable copy ctor
 
-    void operator=(JobsList const&) = delete; // disable = operator
+    void operator=(JobsList const&) = delete;   // disable = operator
 
     static JobsList& getInstance(){
         static JobsList instance; // Guaranteed to be destroyed.
@@ -46,12 +48,18 @@ public:
     }
 
     // TODO: I assumed that addJob fork the process itself
-    void addJob(Command *cmd, bool isStopped = false);
+    /**
+     * Runs the command in the background and add it to the jobs list
+     * @param cmd pointer to the command
+     * @param cmd_line the line the user entered
+     * @param isStopped ????
+     */
+    void addJob(Command* cmd, std::string cmd_line, bool isStopped = false);
 
     /**
-    * prints to os for each job: `<l_str><pid><r_str> <command + input>&`
+    * prints to os for each job: `<l_str><pid / jid><r_str> <command + input>`
     */
-    void printJobsList(std::ostream& os, std::string l_str, std::string r_str);
+    void printJobsList(std::string l_str, std::string r_str, bool use_pid = true);
 
     /**
     * Kills all jobs and prints: `smash: sending SIGKILL signal to <N> jobs:`
@@ -59,16 +67,29 @@ public:
     */
     void killAllJobs();
 
+    /**
+     * Clears the list from the finished jobs
+     */
     void removeFinishedJobs();
 
     //TODO: return nullptr if couldnt find job id
-    JobEntry* getJobById(int jobId); // V
+    /**
+     * Returns a job by its ID
+     * @param jobId the job ID of the wanted job
+     */
+    JobEntry* getJobById(int jobId);
 
-    void removeJobById(int jobId); 
+    /**
+     * Remove a jobs by its job ID
+     */
+    // void removeJobById(int jobId);
 
-    JobEntry *getLastJob(int *lastJobId);
+    /**
+     * 
+     */
+    // JobEntry* getLastJob(int* lastJobId);
 
-    JobEntry *getLastStoppedJob(int *jobId); 
+    // JobEntry *getLastStoppedJob(int *jobId); 
 
     // TODO: Add extra methods or modify exisitng ones as needed
     /**
