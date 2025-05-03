@@ -257,13 +257,6 @@ void SimpleExternalCommand::execute(){
     else if (pid == 0){
         // child
 
-        // this should catch all the explicit executions of files
-        if (args[0][0] == '.' || args[0][0] == '/'){
-            execv(args[0], args);
-            perror("execv failed");
-            exit(-1);
-        }
-
         // search for the command in PATH (run the first occurance)
         // otherwise try to run locally
         auto path_res = is_envvar("PATH");
@@ -281,12 +274,11 @@ void SimpleExternalCommand::execute(){
                 }
             }
         }
-        else{
-            // We wouldn't want to get here...
-            execv(args[0], args);
-            perror("execv failed");
-            exit(-1);
-        }
+
+        // We wouldn't want to get here...
+        execv(args[0], args);
+        perror("execv failed");
+        exit(-1);
     }
     else if (wait(nullptr) < 0)
         perror("wait failed");
