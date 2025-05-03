@@ -80,11 +80,17 @@ public:
     void execute() override;
 };
 
-class WatchprocCommand : public BuiltInCommand{
+class WatchProcCommand : public BuiltInCommand{
 public:
-    WatchprocCommand(const char* cmd_line) : BuiltInCommand(cmd_line){}
+    WatchProcCommand(const char* cmd_line) : BuiltInCommand(cmd_line){}
 
-    virtual ~WatchprocCommand() = default;
+    virtual ~WatchProcCommand() = default;
+
+    long get_total_cpu_time();
+
+    long get_process_cpu_time(pid_t pid);
+
+    bool get_mem_usage_MB(pid_t pid, double& mem);
 
     void execute() override;
 };

@@ -14,7 +14,9 @@
 #include "JobsList.hpp"
 #include "AliasTable.hpp"
 #include "envvar.hpp"
+#include <iomanip>
 
+#define KILOBYTE 1024.0
 #define MAX_PATH 200
 
 using namespace std;
@@ -117,8 +119,7 @@ bool isNumber(const char* s) {
     for (int i = 0; s[i]; ++i) {
         if (!std::isdigit(s[i])) return false;
     }
-    if (*s == '0' || s[0] == '-') return false;
-    return true;
+    return std::stoi(s) > 0; // convert to integer and check if > 0
 }
 
 void FgCommand::execute() {
@@ -249,13 +250,148 @@ void AliasCommand::execute(){
     cleanup();
 }
 
-void WatchprocCommand::execute() {
-    if (count > 2 ||!isNumber(args[1])) {  // If more than one argument was provided / the format of the arguments isn't correct
+bool WatchProcCommand::get_mem_usage_MB(pid_t pid, double& mem) {
+    std::string path = "/proc/" + std::to_string(pid) + "/status";
+    int fd = open(path.c_str(), O_RDONLY);
+    if (fd == -1) {
+        perror("smash error: open failed");
+        return false;
+    }
+
+    // read from file
+    constexpr size_t BUF_SIZE = 8192;
+    char buffer[BUF_SIZE];
+    ssize_t bytes_read = read(fd, buffer, BUF_SIZE - 1);
+    close(fd);
+    if (bytes_read <= 0) {
+        perror("smash error: read failed");
+        return false;
+    }
+    buffer[bytes_read] = '\0'; // Null-terminating a String
+
+    // Search for the line starting with "VmRSS:"
+    const char* vmrss_line = std::strstr(buffer, "VmRSS:");
+    if (!vmrss_line) {
+        return false;
+    }
+
+    // Parse the number from the line
+    int kb = 0;
+    if (sscanf(vmrss_line, "VmRSS: %d", &kb) != 1) {
+        return false;
+    }
+
+    mem = kb / KILOBYTE;
+    return true;
+}
+
+long WatchProcCommand::get_process_cpu_time(pid_t pid) {
+    std::string path = "/proc/" + std::to_string(pid) + "/stat";
+    int fd = open(path.c_str(), O_RDONLY);
+    if (fd == -1) {
+        perror("smash error: open failed");
+        return false;
+    }
+
+    char buffer[4096];
+    ssize_t sizeRead = read(fd, buffer, sizeof(buffer) - 1);
+    close(fd);
+    if (sizeRead <= 0) {
+        perror("smash error: read failed");
+        return -1;
+    }
+    buffer[sizeRead] = '\0';
+
+    char* ptr = buffer;
+    int field = 0;
+    long utime = 0, stime = 0;
+    while (field < 15) {
+        while (*ptr == ' ') ++ptr;
+        // strol - convert a C-style string (const char*) to a long integer.
+        if (field == 13) utime = strtol(ptr, &ptr, 10);
+        else if (field == 14) stime = strtol(ptr, &ptr, 10);
+        else strtol(ptr, &ptr, 10); // skip other fields
+        ++field;
+    }
+
+    return utime + stime; // in clock ticks
+}
+
+long WatchProcCommand::get_total_cpu_time() {
+    int fd = open("/proc/stat", O_RDONLY);
+    if (fd == -1) {
+        perror("smash error: open failed");
+        return false;
+    }
+
+    char buffer[4096];
+    ssize_t sizeRead = read(fd, buffer, sizeof(buffer) - 1);
+    close(fd);
+    if (sizeRead <= 0) {
+        perror("smash error: read failed");
+        return -1;
+    }
+    buffer[sizeRead] = '\0';
+
+    long total = 0;
+    char label[5];   // to read the first word "cpu"
+    long val;  // to store each number temporarily
+    char* ptr = buffer;
+    sscanf(ptr, "%s", label); // skip "cpu" and store in label - we know cpu is at first because the file starts with the CPU line
+    ptr = strchr(ptr, ' ') + 1; // move pointer to first number after cpu
+    // adds each number to total
+    while (sscanf(ptr, "%ld", &val) == 1) {
+        total += val;
+        ptr = strchr(ptr, ' ');
+        if (!ptr) break;  // if no more spaces, stop
+        ++ptr;
+    }
+
+    return total; // in clock ticks
+}
+
+void WatchProcCommand::execute() {
+    this->prepare();
+    if (count > 2 || !isNumber(args[1])) {  // If more than one argument was provided / the format of the arguments isn't correct
         std::cerr << "smash error: watchproc: invalid arguments" << std::endl;
         this->cleanup();
         return;
     }
-    // std::cout << "PID: " << args[1] << " | CPU Usage: " << cpuUsage << " | Memory Usage: " << memUsage << std::endl;
+
+    pid_t thisPID = std::stoi(args[1]);
+    if (kill(thisPID, 0) == 0) { // check if process exist and accesible
+        double memUsage;
+        if (!get_mem_usage_MB(thisPID, memUsage)) {
+            this->cleanup();
+            return;
+        }
+        long p1 = get_process_cpu_time(thisPID);
+        long t1 = get_total_cpu_time();
+        if (p1 == -1 || t1 == -1) {
+            this->cleanup();
+            return;
+        }
+        sleep(1);
+        long p2 = get_process_cpu_time(thisPID);
+        long t2 = get_total_cpu_time();
+        if (p2 == -1 || t2 == -1) {
+            this->cleanup();
+            return;
+        }
+
+        double cpuUsage = 100.0 * ((double)(p2 - p1) / (double)(t2 - t1));
+
+        std::cout << std::fixed << std::setprecision(1);
+        std::cout << "PID: " << args[1]
+                  << " | CPU Usage: " << cpuUsage << "%"
+                  << " | Memory Usage: " << memUsage << " MB " << std::endl;
+    } else if (errno == ESRCH || errno == EPERM) {
+        std::cerr << "smash error: watchproc: pid " << thisPID << " does not exist" << std::endl;
+    } else {
+        perror("smash error: kill failed");
+    }
+
+    this->cleanup();
 }
 
 void UnSetEnvCommand::execute(){
