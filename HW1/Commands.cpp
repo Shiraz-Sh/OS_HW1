@@ -15,75 +15,12 @@
 #include "JobsList.hpp"
 #include "SpecialCommands.hpp"
 #include "envvar.hpp"
+#include "parsing_utils.hpp"
 
 #define MAX_ARGS 20
 
 using namespace std;
 
-const std::string WHITESPACE = " \n\r\t\f\v";
-
-#if 0
-#define FUNC_ENTRY()  \
-  cout << __PRETTY_FUNCTION__ << " --> " << endl;
-
-#define FUNC_EXIT()  \
-  cout << __PRETTY_FUNCTION__ << " <-- " << endl;
-#else
-#define FUNC_ENTRY()
-#define FUNC_EXIT()
-#endif
-
-string _ltrim(const std::string &s) {
-    size_t start = s.find_first_not_of(WHITESPACE);
-    return (start == std::string::npos) ? "" : s.substr(start);
-}
-
-string _rtrim(const std::string &s) {
-    size_t end = s.find_last_not_of(WHITESPACE);
-    return (end == std::string::npos) ? "" : s.substr(0, end + 1);
-}
-
-string _trim(const std::string &s) {
-    return _rtrim(_ltrim(s));
-}
-
-int _parseCommandLine(const char *cmd_line, char **args) {
-    FUNC_ENTRY()
-    int i = 0;
-    std::istringstream iss(_trim(string(cmd_line)).c_str());
-    for (std::string s; iss >> s;) {
-        args[i] = (char *) malloc(s.length() + 1);
-        memset(args[i], 0, s.length() + 1);
-        strcpy(args[i], s.c_str());
-        args[++i] = NULL;
-    }
-    return i;
-
-    FUNC_EXIT()
-}
-
-bool _isBackgroundComamnd(const char *cmd_line) {
-    const string str(cmd_line);
-    return str[str.find_last_not_of(WHITESPACE)] == '&';
-}
-
-void _removeBackgroundSign(char *cmd_line) {
-    const string str(cmd_line);
-    // find last character other than spaces
-    unsigned int idx = str.find_last_not_of(WHITESPACE);
-    // if all characters are spaces then return
-    if (idx == string::npos) {
-        return;
-    }
-    // if the command line does not end with & then return
-    if (cmd_line[idx] != '&') {
-        return;
-    }
-    // replace the & (background sign) with space and then remove all tailing spaces.
-    cmd_line[idx] = ' ';
-    // truncate the command line string up to the last non-space character
-    cmd_line[str.find_last_not_of(WHITESPACE, idx) + 1] = 0;
-}
 
 void Command::prepare(){
     count = _parseCommandLine(this->cmd_line, args);
@@ -100,29 +37,21 @@ void Command::cleanup() {
  * @param cmd_line
  * @return true if cmd_line contain '?' or '*'
  */
-bool checkWildcards(const char* cmd_line) {
-    while (*cmd_line != '\0') {
-        if (*cmd_line == '?' || *cmd_line == '*')
-            return true;
-        cmd_line++;
-    }
-    return false;
+bool checkWildcards(const char* cmd_line){
+    std::string command = std::string(cmd_line);
+    return command.find("?") != std::string::npos || command.find("*") != std::string::npos;
 }
 
-bool checkIORedirection(char* args[MAX_ARGS], int count) {
-    for (int i = 0; i < count; i++) {
-        if (args[i] == ">" || args[i] == ">>")
-            return true;
-    }
-    return false;
+/**
+ * Checks if > is found in the command (if only one > is found return true)
+ */
+bool checkIORedirection(const char* cmd_line){
+    return std::string(cmd_line).find(">") != std::string::npos;
 }
 
-bool checkPipe(char* args[MAX_ARGS], int count) {
-    for (int i = 0; i < count; i++) {
-        if (args[i] == "|" || args[i] == "|&")
-            return true;
-    }
-    return false;
+
+bool checkPipe(const char* cmd_line){
+    return std::string(cmd_line).find("|") != std::string::npos;
 }
 
 void complexExternalCommand::execute() {
@@ -215,10 +144,11 @@ Command* SmallShell::CreateCommand(const char* cmd_line, bool* run_on_background
     else if (special_cmds.find(firstWord) != special_cmds.end()){   // check if special command
         res = special_cmds[firstWord];
     }
-    else if (checkIORedirection(args, count)){                      // check for io redirection or pipe usage
+    else if (checkIORedirection(cmd_line)){                      // check for io redirection or pipe usage
         res = new RedirectionCommand(cmd_line);
+        *run_on_background = false;
     }
-    else if (checkPipe(args, count)){
+    else if (checkPipe(cmd_line)){
         res = new PipeCommand(cmd_line);
     }
     else if (alias_table.query(firstWord).first){                   // check for aliases
@@ -285,7 +215,6 @@ void SimpleExternalCommand::execute(){
             }
         }
 
-        // We wouldn't want to get here...
         execv(args[0], args);
         perror("execv failed");
         exit(-1);
@@ -295,3 +224,4 @@ void SimpleExternalCommand::execute(){
 
     cleanup();
 }
+

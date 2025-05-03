@@ -1,5 +1,3 @@
-
-#include "SpecialCommands.hpp"
 #include <sys/types.h>
 #include <pwd.h>
 #include <iostream>
@@ -9,6 +7,9 @@
 #include <sys/wait.h>
 #include <sstream>
 #include <fcntl.h>
+
+#include "SpecialCommands.hpp"
+#include "parsing_utils.hpp"
 
 #define MAX_ARGS 20
 
@@ -170,4 +171,63 @@ void PipeCommand::execute() {
 
 void RedirectionCommand::execute() {
     // TODO: implement
+    prepare();
+
+    std::string src, dst;
+    std::string buffer;
+
+    std::stringstream line_s;
+    line_s << args[0];
+    for (int i = 1; i < count; i++){
+        line_s << " " << args[i];
+    }
+
+    std::string line = line_s.str();
+    auto pos = line.find(">");
+
+    // check for appending / creating new file
+    bool append = false;
+    if (pos != std::string::npos){
+        src = _trim(line.substr(0, pos));
+        if (line[pos + 1] == '>'){
+            dst = _trim(line.substr(pos + 2));
+            append = true;
+        }
+        else
+            dst = _trim(line.substr(pos + 1));
+    }
+
+    // parse the source command
+    pid_t pid = fork();
+    if (pid < 0){
+        SYSCALL_FAIL("fork");
+        return;
+    }
+    else if (pid == 0){
+        // child process
+        setpgrp();
+
+        // use dst as the stdout.
+        close(1);
+        int fd;
+        if (append)
+            fd = open(dst.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0666); // allow append
+        else
+            fd = open(dst.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0666); // force truncation
+
+        if (fd == -1){
+            SYSCALL_FAIL("open");
+            exit(-1);
+        }
+
+        // run the command using the smash create command.
+        Command* cmd = SmallShell::getInstance().CreateCommand(src.c_str());
+        cmd->execute();
+        close(fd);
+        exit(0);
+    }
+
+    wait(nullptr);
+
+    cleanup();
 }
