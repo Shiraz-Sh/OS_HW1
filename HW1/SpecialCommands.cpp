@@ -7,10 +7,12 @@
 #include <sys/wait.h>
 #include <sstream>
 #include <fcntl.h>
+#include <sys/stat.h>
 
 #include "SpecialCommands.hpp"
 #include "parsing_utils.hpp"
 #include "net_utils.hpp"
+#include "global_utils.hpp"
 
 #define MAX_ARGS 20
 
@@ -254,12 +256,65 @@ void NetInfoCommand::execute(){
     cleanup();
 }
 
+
+int get_size_recursive(const std::string& path){
+    struct stat info;
+    int res = stat(path.c_str(), &info);
+    if (res == -1){
+        std::cout << "error on: " << path << std::endl;
+        SYSCALL_FAIL("stat");
+        return -1;
+    }
+    else if (res == 0 && S_ISREG(info.st_mode)){
+        return (int) info.st_size;
+    }
+    else if (res == 0 && S_ISDIR(info.st_mode)){
+        int size = 0;
+
+        auto names = list_directory(path);
+        std::cout << "dir: " << path << std::endl;
+        for (auto name : names){
+            if (name.compare(".") == 0 || name.compare("..") == 0){
+                continue;
+            }
+            // std::cout << "special-file" << std::endl;
+            int val = get_size_recursive(path + "/" + name);
+            if (val == -1){
+                return -1;
+            }
+            size += val;
+        }
+        return size;
+    }
+    return 0;
+}
+
 void DuCommand::execute() {
     this->prepare();
-    if (count > 2) {
+
+    if (count > 2){
         std::cerr << "smash error: du: too many arguments" << std::endl;
+        this->cleanup();
+        return;
+    }
+    
+    struct stat info;
+    int res = stat(args[1], &info);
+    if (res == -1){
+        SYSCALL_FAIL("stat");
+        return;
+    }
+    else if (!(res == 0 && S_ISDIR(info.st_mode))){
+        std::cerr << "smash error: du: directory " << args[1] << " does not exist" << std::endl;
+        return;
     }
 
+    
+    int size = get_size_recursive(std::string(args[1]));
+
+    if (size != -1){
+        std::cout << "Total disk usage: " << size << " KB" << std::endl;
+    }
 
     this->cleanup();
 }

@@ -14,12 +14,16 @@ bool JobsList::isJobsListEmpty(){
     return jobs.empty();
 }
 
-JobsList::JobEntry* JobsList::getMaxJobID() {
+int JobsList::getMaxJobID() {
     removeFinishedJobs();
-    return &jobs[jids.back()];
+    if (isJobsListEmpty()){
+        return 0;
+    }
+    return jobs[jids.back()].getJobID();
 }
 
-JobsList::JobEntry* JobsList::getJobById(int jobId) {
+JobsList::JobEntry* JobsList::getJobById(int jobId){
+    removeFinishedJobs();
     auto entry = jobs.find(jobId);
 
     // if the entry doesn't exist or the job in the entry already finished
@@ -29,6 +33,7 @@ JobsList::JobEntry* JobsList::getJobById(int jobId) {
 }
 
 void JobsList::addJob(Command* cmd, std::string cmd_line, bool isStopped){
+    removeFinishedJobs();
     pid_t pid = fork();
     if (pid < 0){
         SYSCALL_FAIL("fork");
@@ -36,20 +41,22 @@ void JobsList::addJob(Command* cmd, std::string cmd_line, bool isStopped){
     }
     else if (pid == 0){
         setpgrp();
-
         cmd->execute();
         exit(0);
     }
-    
-    job_cnt++;
+
+    job_cnt = getMaxJobID() + 1;
     jobs[job_cnt] = JobEntry(pid, job_cnt, cmd_line);
     jids.push_back(job_cnt);
 }
 
-void JobsList::killAllJobs(){
+void JobsList::killAllJobs(bool silent){
     removeFinishedJobs();
-    std::cout << "smash: sending SIGKILL signal to " << jobs.size() << " jobs:" << std::endl;
-    printJobsList("", ":");
+
+    if (!silent){
+        std::cout << "smash: sending SIGKILL signal to " << jobs.size() << " jobs:" << std::endl;
+        printJobsList("", ":");
+    }
     for (const auto& pair : jobs){
         kill(pair.second.getJobPid(), SIGKILL);
     }
@@ -70,9 +77,15 @@ void JobsList::printJobsList(std::string l_str, std::string r_str, bool use_pid)
 void JobsList::removeFinishedJobs(){
     std::vector<int> jids_updated;
     for (auto& jid : jids){
-        
-        if (waitpid(jobs[jid].getJobPid(), nullptr, WNOHANG) != 0){ //check if a job didn't finish
-            jobs.erase(jid);
+        if (kill(jobs[jid].getJobPid(), 0) == -1){ //check if a job didn't finish
+            if (errno == ESRCH){
+                jobs.erase(jid);
+            }
+            else{
+                SYSCALL_FAIL("kill");
+                jids_updated.push_back(jid);
+                return;
+            }
         }
         else{
             jids_updated.push_back(jid);
@@ -80,4 +93,3 @@ void JobsList::removeFinishedJobs(){
     }
     jids = jids_updated;
 }
-        

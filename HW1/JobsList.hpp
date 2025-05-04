@@ -65,7 +65,7 @@ public:
     * Kills all jobs and prints: `smash: sending SIGKILL signal to <N> jobs:`
     * and then for each job: `<pid>: <command + input>&`
     */
-    void killAllJobs();
+    void killAllJobs(bool silent);
 
     /**
      * Clears the list from the finished jobs
@@ -100,5 +100,5 @@ public:
     /**
      * @return the job with the maximal job_id
      */
-    JobEntry* getMaxJobID(); // V
+    int getMaxJobID(); // V
 };

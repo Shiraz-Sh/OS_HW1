@@ -145,7 +145,7 @@ void FgCommand::execute() {
             return;
         }
         // brings the job with the maximal job id in the jobs list to foregrund
-        bringJobToForeground(smash.jobs_list.getMaxJobID()->getJobID());
+        bringJobToForeground(smash.jobs_list.getMaxJobID());
     }
     this->cleanup();
 }
@@ -165,7 +165,7 @@ void QuitCommand::execute(){
 
     // if optional argument kill is given
     if (count == 2 && strcmp(args[1], "kill") == 0){
-        JobsList::getInstance().killAllJobs();
+        JobsList::getInstance().killAllJobs(false);
     }
 
     cleanup();

@@ -189,13 +189,16 @@ void SmallShell::executeCommand(const char* cmd_line){
             cmd->execute();
         } else {
             pid_t processPID = fork();
-            if (processPID == 0) {  // son
+            if (processPID == 0){
+                // son
                 setpgrp();
                 cmd->execute();
                 exit(0);
             } else if (processPID == -1) {  // error
                 SYSCALL_FAIL("fork");
-            } else {  // parent
+            }
+            else{
+                // parent
                 foreground_pid = processPID;
                 wait(NULL);
                 foreground_pid = -1;  // reset when done
@@ -227,7 +230,8 @@ void SimpleExternalCommand::execute(){
             struct stat sb;
             while (std::getline(path, buffer, ':')){
                 std::string temp_path = buffer + '/' + args[0];
-                if (stat(temp_path.c_str(), &sb) == 0){
+                int res = stat(temp_path.c_str(), &sb);
+                if (res == 0){
                     execv(temp_path.c_str(), args);
                     SYSCALL_FAIL("execv");
                     exit(-1);
