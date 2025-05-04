@@ -20,7 +20,7 @@ void WhoamiCommand::execute() {
 
     int fd = open("/etc/passwd", O_RDONLY);
     if (fd == -1) {
-        perror("smash error: open failed");
+        SYSCALL_FAIL("open");
         this->cleanup();
         return;
     }
@@ -37,7 +37,7 @@ void WhoamiCommand::execute() {
     close(fd);
 
     if (bytes_read == -1) {
-        perror("smash error: read failed");
+        SYSCALL_FAIL("read");
         this->cleanup();
         return;
     }
@@ -95,14 +95,14 @@ void PipeCommand::execute() {
 
     int pipefd[2];  // pipefd[0] for the read end and pipefd[1] for the write end
     if (pipe(pipefd) == -1) {
-        perror("smash error: pipe failed");
+        SYSCALL_FAIL("pipe");
         this->cleanup();
         return;
     }
 
     pid_t pid1 = fork();
     if (pid1 == -1){
-        perror("smash error: fork failed");
+        SYSCALL_FAIL("fork");
         this->cleanup();
         return;
     } else if (pid1 == 0) {      // first son process
@@ -121,7 +121,7 @@ void PipeCommand::execute() {
     }
     pid_t pid2 = fork();
     if (pid2 == -1) {
-        perror("smash error: fork failed");
+        SYSCALL_FAIL("fork");
         this->cleanup();
         return;
     }
@@ -145,9 +145,9 @@ void PipeCommand::execute() {
     close(pipefd[1]);
 
     if (waitpid(pid1, nullptr, 0) == -1)
-        perror("smash error: waitpid failed");
+        SYSCALL_FAIL("waitpid");
     if (waitpid(pid2, nullptr, 0) == -1)
-        perror("smash error: waitpid failed");
+        SYSCALL_FAIL("waitpid");
 
     delete[] cmd_line1;
     free(cmd_line2);

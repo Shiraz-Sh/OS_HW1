@@ -15,8 +15,7 @@ void ctrlCHandler(int sig_num) {
         if (kill(foreground_pid, SIGKILL) == 0) {
             std::cout << "smash: process " << foreground_pid << " was killed" << std::endl;
             foreground_pid = -1;
-        } else {
-            perror("smash error: kill failed");
-        }
+        } else
+            SYSCALL_FAIL("kill");
     }
 }

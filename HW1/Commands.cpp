@@ -74,7 +74,7 @@ void complexExternalCommand::execute() {
 
     pid_t pid = fork();
     if (pid == -1) {
-        perror("smash error: fork failed");
+        SYSCALL_FAIL("fork");
     }
     else if (pid == 0){         // It's the child process
         setpgrp();
@@ -212,7 +212,7 @@ void SimpleExternalCommand::execute(){
     // int stat;
     pid_t pid = fork();
     if (pid < 0)
-        perror("fork failed");
+        SYSCALL_FAIL("fork");
     else if (pid == 0){
         // child
         setpgrp();
@@ -229,18 +229,18 @@ void SimpleExternalCommand::execute(){
                 std::string temp_path = buffer + '/' + args[0];
                 if (stat(temp_path.c_str(), &sb) == 0){
                     execv(temp_path.c_str(), args);
-                    perror("execv failed");
+                    SYSCALL_FAIL("execv");
                     exit(-1);
                 }
             }
         }
 
         execv(args[0], args);
-        perror("execv failed");
+        SYSCALL_FAIL("execv");
         exit(-1);
     }
     else if (wait(nullptr) < 0)
-        perror("wait failed");
+        SYSCALL_FAIL("wait");
 
     cleanup();
 }
