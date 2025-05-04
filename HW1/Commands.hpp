@@ -19,8 +19,8 @@ class AliasTable;
 
 class Command{
     // TODO: Add your data members
-    char* cmd_line;
 protected:
+    char* cmd_line;
     char* args[MAX_ARGS]; // Assumption - up to 20 args
     int count;
 public:

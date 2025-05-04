@@ -76,43 +76,33 @@ std::string joinArgs(char** args) {
 }
 
 void PipeCommand::execute() {
-    this->prepare();
+    char* pipe_pos = strchr(cmd_line, '|'); // Find the '|' character
 
-    // Seperate the two commands -
-    std::vector<char*> args1;
-    std::vector<char*> args2;
-    int numOfPipe;
-    bool isSimplePipe;
-    for (int i = 0; i < count; i++) {
-        if (strcmp(args[i], "|") == 0) {
-            isSimplePipe = true;
-            numOfPipe = i;
-            break;
-        } else if (strcmp(args[i], "|&") == 0) {
-            isSimplePipe = false;
-            numOfPipe = i;
-            break;
-        }
+    // Determine if it's a simple pipe or error pipe
+    bool isSimplePipe = !(pipe_pos[1] == '&');
+
+    // copy the first part before '|'
+    size_t len1 = pipe_pos - cmd_line;
+    char* cmd_line1 = new char[len1 + 1]; // +1 for null terminator
+    strncpy(cmd_line1, cmd_line, len1);
+    cmd_line1[len1] = '\0'; // null-terminate
+
+    char* cmd2_start;
+    // copy the second part after '|'
+    if (isSimplePipe) {
+        cmd2_start = pipe_pos + 1;
+    } else {
+        cmd2_start = pipe_pos + 2;
     }
 
-    for (int j = 0; j < numOfPipe; j++) {
-        args1.push_back(args[j]);
-    }
-    args1.push_back(nullptr); // terminate
-
-    for (int j = (numOfPipe + 1), k = 0; j < count; j++, k++) {
-        args2.push_back(args[j]);
-    }
-    args2.push_back(nullptr); // terminate       // terminate args
-
-
-    std::string cmd_line1 = joinArgs(args1.data());
-    std::string cmd_line2 = joinArgs(args2.data());
+    // skip leading spaces in cmd_line2
+    while (*cmd2_start == ' ') ++cmd2_start;
+    char* cmd_line2 = strdup(cmd2_start);
 
     // Gets the relevant commands
     SmallShell& smash = SmallShell::getInstance();
-    Command* cmd1 = smash.CreateCommand(cmd_line1.c_str());
-    Command* cmd2 = smash.CreateCommand(cmd_line2.c_str());
+    Command* cmd1 = smash.CreateCommand(cmd_line1);
+    Command* cmd2 = smash.CreateCommand(cmd_line2);
 
     int pipefd[2];  // pipefd[0] for the read end and pipefd[1] for the write end
     if (pipe(pipefd) == -1) {
@@ -170,7 +160,8 @@ void PipeCommand::execute() {
     if (waitpid(pid2, nullptr, 0) == -1)
         perror("smash error: waitpid failed");
 
-    this->cleanup();
+    delete[] cmd_line1;
+    free(cmd_line2);
 }
 
 void RedirectionCommand::execute() {
