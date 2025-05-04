@@ -470,5 +470,5 @@ void UnSetEnvCommand::execute(){
 
 
 void JobsCommand::execute(){
-    JobsList::getInstance().printJobsList("[", "]");
+    JobsList::getInstance().printJobsList("[", "]", false);
 }
