@@ -53,7 +53,7 @@ void WhoamiCommand::execute() {
         std::getline(linestream, x, ':');
         std::getline(linestream, uid_str, ':');
 
-        if (std::stoi(uid_str) == uid) { // checks if the user is our user
+        if (static_cast<uid_t>(std::stoi(uid_str)) == uid) { // checks if the user is our user
             std::getline(linestream, gid, ':');
             std::getline(linestream, comment, ':');
             std::getline(linestream, home, ':');
@@ -79,32 +79,35 @@ void PipeCommand::execute() {
     this->prepare();
 
     // Seperate the two commands -
-    char* args1[count];
-    char* args2[count];
+    std::vector<char*> args1;
+    std::vector<char*> args2;
     int numOfPipe;
     bool isSimplePipe;
     for (int i = 0; i < count; i++) {
         if (strcmp(args[i], "|") == 0) {
             isSimplePipe = true;
             numOfPipe = i;
+            break;
         } else if (strcmp(args[i], "|&") == 0) {
             isSimplePipe = false;
             numOfPipe = i;
+            break;
         }
     }
 
     for (int j = 0; j < numOfPipe; j++) {
-        args1[j] = args[j];
+        args1.push_back(args[j]);
     }
-    args1[numOfPipe] = nullptr;
+    args1.push_back(nullptr); // terminate
 
     for (int j = (numOfPipe + 1), k = 0; j < count; j++, k++) {
-        args2[k] = args[j];
+        args2.push_back(args[j]);
     }
-    args2[count - numOfPipe - 1] = nullptr;       // terminate args
+    args2.push_back(nullptr); // terminate       // terminate args
 
-    std::string cmd_line1 = joinArgs(args1);
-    std::string cmd_line2 = joinArgs(args2);
+
+    std::string cmd_line1 = joinArgs(args1.data());
+    std::string cmd_line2 = joinArgs(args2.data());
 
     // Gets the relevant commands
     SmallShell& smash = SmallShell::getInstance();

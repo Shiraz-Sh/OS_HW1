@@ -183,16 +183,22 @@ void SmallShell::executeCommand(const char* cmd_line){
     if (background)
         JobsList::getInstance().addJob(cmd, std::string(cmd_line));
     else {
-        pid_t processPID = fork();
-        if (processPID == 0) {  // son
-            setpgrp();
+        if (dynamic_cast<QuitCommand*>(cmd) != nullptr) {
+            // it's quit command, terminate the smash process itself, don't need to fork
             cmd->execute();
-        } else if (processPID == -1) {  // error
-            foreground_pid = processPID;
-            wait(NULL);
-            foreground_pid = -1;  // reset when done
-        } else {  // parent
-            SYSCALL_FAIL("fork");
+        } else {
+            pid_t processPID = fork();
+            if (processPID == 0) {  // son
+                setpgrp();
+                cmd->execute();
+                exit(0);
+            } else if (processPID == -1) {  // error
+                SYSCALL_FAIL("fork");
+            } else {  // parent
+                foreground_pid = processPID;
+                wait(NULL);
+                foreground_pid = -1;  // reset when done
+            }
         }
     }
     // TODO: needs to be changed and execute on processes that weren't fork.
