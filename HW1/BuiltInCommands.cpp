@@ -179,7 +179,7 @@ void KillCommand::execute() {
     this->prepare();
     // cheack arguments
     char* signumChar = args[1] + 1;
-    if (count != 2) {
+    if (count != 3) {
         std::cerr << "smash error: kill: invalid arguments" << std::endl;
     }
     if (*args[1] != '-' || !isNumber(signumChar) || !isNumber(args[2])) {

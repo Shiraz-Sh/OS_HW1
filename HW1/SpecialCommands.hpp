@@ -53,3 +53,12 @@ public:
 
     void execute() override;
 };
+
+class DuCommand : public Command {
+public:
+    DuCommand(const char* cmd_line) : Command(cmd_line){}
+
+    virtual ~DuCommand() = default;
+
+    void execute() override;
+};

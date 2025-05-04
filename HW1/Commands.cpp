@@ -131,7 +131,7 @@ Command* SmallShell::CreateCommand(const char* cmd_line, bool* run_on_background
     };
 
     std::map<string, Command*> special_cmds{
-        // {"du", new DuCommand(cmd_line)},
+        {"du", new DuCommand(cmd_line)},
         {"whoami", new WhoamiCommand(cmd_line)},
         {"netinfo", new NetInfoCommand(cmd_line)}
     };

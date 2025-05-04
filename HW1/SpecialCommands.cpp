@@ -64,17 +64,6 @@ void WhoamiCommand::execute() {
     this->cleanup();
 }
 
-std::string joinArgs(char** args) {
-    std::string result;
-    for (int i = 0; args[i] != nullptr; ++i) {
-        if (i > 0) {
-            result += " ";
-        }
-        result += args[i];
-    }
-    return result;
-}
-
 void PipeCommand::execute() {
     char* pipe_pos = strchr(cmd_line, '|'); // Find the '|' character
 
@@ -243,4 +232,14 @@ void NetInfoCommand::execute(){
     std::cout << "Subnet Mask: " << get_subnet_mask(args[1]) << std::endl;
 
     cleanup();
+}
+
+void DuCommand::execute() {
+    this->prepare();
+    if (count > 2) {
+        std::cerr << "smash error: du: too many arguments" << std::endl;
+    }
+
+
+    this->cleanup();
 }
