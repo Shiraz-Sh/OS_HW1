@@ -19,6 +19,8 @@
 
 #define MAX_ARGS 20
 
+volatile pid_t foreground_pid = -1;
+
 using namespace std;
 
 
@@ -180,8 +182,19 @@ void SmallShell::executeCommand(const char* cmd_line){
 
     if (background)
         JobsList::getInstance().addJob(cmd, std::string(cmd_line));
-    else
-        cmd->execute();
+    else {
+        pid_t processPID = fork();
+        if (processPID == 0) {  // son
+            setpgrp();
+            cmd->execute();
+        } else if (processPID == -1) {  // error
+            foreground_pid = processPID;
+            wait(NULL);
+            foreground_pid = -1;  // reset when done
+        } else {  // parent
+            SYSCALL_FAIL("fork");
+        }
+    }
     // TODO: needs to be changed and execute on processes that weren't fork.
     // Please note that you must fork smash process for some commands (e.g., external commands....)
 }
