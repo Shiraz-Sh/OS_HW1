@@ -78,6 +78,15 @@ public:
     void execute() override;
 };
 
+class KillCommand : public BuiltInCommand{
+public:
+    KillCommand(const char* cmd_line) : BuiltInCommand(cmd_line){}
+
+    virtual ~KillCommand() = default;
+
+    void execute() override;
+};
+
 class AliasCommand : public BuiltInCommand{
 public:
     AliasCommand(const char* cmd_line) : BuiltInCommand(cmd_line){}

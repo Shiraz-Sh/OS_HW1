@@ -121,7 +121,7 @@ Command* SmallShell::CreateCommand(const char* cmd_line, bool* run_on_background
         {"jobs", new JobsCommand(cmd_line)},
         {"fg", new FgCommand(cmd_line)},
         {"quit", new QuitCommand(cmd_line)},
-        // {"kill", new KillCommand(cmd_line)},
+        {"kill", new KillCommand(cmd_line)},
         {"alias", new AliasCommand(cmd_line)},
         {"unalias", new UnAliasCommand(cmd_line)},
         {"unsetenv", new UnSetEnvCommand(cmd_line)},

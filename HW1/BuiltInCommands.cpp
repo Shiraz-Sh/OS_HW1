@@ -119,7 +119,7 @@ bool isNumber(const char* s) {
     for (int i = 0; s[i]; ++i) {
         if (!std::isdigit(s[i])) return false;
     }
-    return std::stoi(s) > 0; // convert to integer and check if > 0
+    return std::stoi(s) >= 0; // convert to integer and check if > 0
 }
 
 void FgCommand::execute() {
@@ -173,6 +173,33 @@ void QuitCommand::execute(){
     cleanup();
 
     exit(0);
+}
+
+void KillCommand::execute() {
+    this->prepare();
+    // cheack arguments
+    char* signumChar = args[1] + 1;
+    if (count != 2) {
+        std::cerr << "smash error: kill: invalid arguments" << std::endl;
+    }
+    if (*args[1] != '-' || !isNumber(signumChar) || !isNumber(args[2])) {
+        std::cerr << "smash error: kill: invalid arguments" << std::endl;
+    }
+
+    int jobId = std::stoi(std::string(args[2]));
+    auto job = JobsList::getInstance().getJobById(jobId);
+    if (job == nullptr) {
+        std::cerr << "smash error: kill: job-id " << jobId << " does not exist" << std::endl;
+    }
+
+    int signum = std::stoi(std::string(signumChar));
+    pid_t jobPID = job->getJobPid();
+    if (kill(jobPID, signum) == 0) {  // sucsses
+        std::cout << "signal number " << signum << " was sent to pid " << jobPID << std::endl;
+    } else {
+        SYSCALL_FAIL("kill");
+    }
+    this->cleanup();
 }
 
 void AliasCommand::execute(){
