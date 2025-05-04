@@ -272,12 +272,11 @@ int get_size_recursive(const std::string& path){
         int size = 0;
 
         auto names = list_directory(path);
-        std::cout << "dir: " << path << std::endl;
         for (auto name : names){
             if (name.compare(".") == 0 || name.compare("..") == 0){
                 continue;
             }
-            // std::cout << "special-file" << std::endl;
+            
             int val = get_size_recursive(path + "/" + name);
             if (val == -1){
                 return -1;
@@ -313,7 +312,7 @@ void DuCommand::execute() {
     int size = get_size_recursive(std::string(args[1]));
 
     if (size != -1){
-        std::cout << "Total disk usage: " << size << " KB" << std::endl;
+        std::cout << "Total disk usage: " << size / KB << " KB" << std::endl;
     }
 
     this->cleanup();
