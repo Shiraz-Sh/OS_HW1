@@ -23,3 +23,17 @@ std::string get_subnet_mask(const char* iface);
  * @returns true if exists
  */
 bool interface_exists(const std::string& iface_name);
+
+
+/**
+ * Gets the default gateway
+ * @returns the default gateway, else empty string
+ */
+std::string get_default_gateway();
+
+
+/**
+ * Search for the DNS servers
+ * @returns a list of all DNS servers IP in IPv4 format
+ */
+std::vector<std::string> get_dns_servers();

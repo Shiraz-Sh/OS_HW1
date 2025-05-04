@@ -1,5 +1,3 @@
-
-#include <bits/stdc++.h>
 #include <unistd.h>
 #include <regex>
 #include <cstddef>

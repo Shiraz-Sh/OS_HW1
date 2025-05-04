@@ -31,7 +31,7 @@ private:
 
     JobsList() = default;
 public:
-    ~JobsList();
+    virtual ~JobsList() = default;
 
     JobsList(JobsList const&) = delete;         // disable copy ctor
 

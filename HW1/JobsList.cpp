@@ -9,10 +9,6 @@
 
 bool JobsList::init_flag = false;
 
-JobsList::~JobsList(){
-    // TODO: clean up if needed
-}
-
 bool JobsList::isJobsListEmpty(){
     removeFinishedJobs();
     return jobs.empty();
@@ -51,7 +47,8 @@ void JobsList::addJob(Command* cmd, std::string cmd_line, bool isStopped){
 }
 
 void JobsList::killAllJobs(){
-    std::cout << "smash: sending SIGKILL signal to <N> jobs:" << std::endl;
+    removeFinishedJobs();
+    std::cout << "smash: sending SIGKILL signal to " << jobs.size() << " jobs:" << std::endl;
     printJobsList("", ":");
     for (const auto& pair : jobs){
         kill(pair.second.getJobPid(), SIGKILL);

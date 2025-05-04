@@ -8,7 +8,7 @@
 
 #include "JobsList.hpp"
 #include "AliasTable.hpp"
-#include "global_macros.hpp"
+#include "global_utils.hpp"
 
 #define MAX_ARGS 20
 

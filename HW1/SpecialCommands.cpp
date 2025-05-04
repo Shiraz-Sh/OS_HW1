@@ -231,6 +231,26 @@ void NetInfoCommand::execute(){
     std::cout << "IP Address: " << get_ip(args[1]) << std::endl;
     std::cout << "Subnet Mask: " << get_subnet_mask(args[1]) << std::endl;
 
+    // print gateway if exists else None
+    std::string gw = get_default_gateway();
+    std::cout << "Default Gateway: " << ((gw.empty()) ? "None" : gw) << std::endl;
+
+    // print DNS servers else None
+    std::cout << "DNS Servers: ";
+    auto servers = get_dns_servers();
+    if (servers.empty()){
+        std::cout << "None" << std::endl;
+    }
+    else{
+        std::cout << servers.front();
+        servers.erase(servers.begin());
+
+        for (auto& dns : servers){
+            std::cout << ", " << dns;
+        }
+        std::cout << std::endl;
+    }
+
     cleanup();
 }
 

@@ -11,7 +11,12 @@ const std::vector<std::string> AliasTable::forbidden = {
     "unalias",  "unsetenv",     "watchproc",
 
     // special commands
-    "du",       "whoami",       "netinfo"
+    "du",       "whoami",       "netinfo",
+
+    // forbidden symbols for aliases
+    // "|",        "*",            ".",
+    // "&",        "/",            "\'",
+    // "="
 };
 
 bool AliasTable::alias(std::string name, const char* command){

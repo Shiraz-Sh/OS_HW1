@@ -139,19 +139,20 @@ Command* SmallShell::CreateCommand(const char* cmd_line, bool* run_on_background
     
     Command* res = nullptr;
 
-    if (builtin_cmds.find(firstWord) != builtin_cmds.end()){        // check if built-in command
-        res = builtin_cmds[firstWord];
-        *run_on_background = false;
-    }
-    else if (special_cmds.find(firstWord) != special_cmds.end()){   // check if special command
-        res = special_cmds[firstWord];
-    }
-    else if (checkIORedirection(cmd_line)){                      // check for io redirection or pipe usage
+    
+    if (checkIORedirection(cmd_line)){                      // check for io redirection or pipe usage
         res = new RedirectionCommand(cmd_line);
         *run_on_background = false;
     }
     else if (checkPipe(cmd_line)){
         res = new PipeCommand(cmd_line);
+    }
+    else if (builtin_cmds.find(firstWord) != builtin_cmds.end()){        // check if built-in command
+        res = builtin_cmds[firstWord];
+        *run_on_background = false;
+    }
+    else if (special_cmds.find(firstWord) != special_cmds.end()){   // check if special command
+        res = special_cmds[firstWord];
     }
     else if (alias_table.query(firstWord).first){                   // check for aliases
         auto alias_expansion = alias_table.query(firstWord).second;
