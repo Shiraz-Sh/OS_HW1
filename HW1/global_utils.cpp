@@ -55,79 +55,65 @@ struct linux_dirent64{
     off64_t        d_off;
     unsigned short d_reclen;
     unsigned char  d_type;
-    char*           d_name;
+    char           d_name[];
 };
 
-// std::vector<std::string> list_directory(const std::string& path){
-//     std::vector<std::string> result;
+std::vector<std::string> list_directory(const std::string& path) {
+    std::vector<std::string> result;
 
-//     int fd = open(path.c_str(), O_RDONLY | O_DIRECTORY);
-//     if (fd == -1){
-//         SYSCALL_FAIL("open");
-//         return result;
-//     }
-
-//     char buf[BUF_SIZE];
-//     while (true){
-//         std::cout << "hi!" << std::endl;
-//         int nread = syscall(SYS_getdents64, fd, buf, BUF_SIZE);
-//         if (nread == -1){
-//             SYSCALL_FAIL("getdents64");
-//             return std::vector<std::string>();
-//         }
-//         if (nread == 0)
-//             break;
-//         std::cout << "hi-loop!" << std::endl;
-//         for (int bpos = 0; bpos < nread; ){
-//             std::cout << "loop1" << std::endl;
-//             struct linux_dirent64* d = (struct linux_dirent64*)(buf + bpos);
-//             std::cout << d->d_name << std::endl;
-//             std::cout << "loop2" << std::endl;
-//             if (d == nullptr){
-//                 continue;
-//             }
-//             if (d->d_name == nullptr){
-//                 continue;
-//             }
-//             std::cout << "no way" << std::endl;
-//             result.push_back(std::string(d->d_name));
-//             bpos += d->d_reclen;
-//         }
-//     }
-
-//     close(fd);
-//     std::cout << "found files!" << std::endl;
-//     for (auto f : result){
-//         std::cout << "file: " << f << std::endl;
-//     }
-//     return result;
-// }
-
-std::vector<std::string> list_directory(const std::string& path){
-    std::vector<std::string> filesAndDirs;
-    DIR* dir = opendir(path.c_str());
-    if (dir == nullptr){
-        std::cerr << "Could not open directory: " << path << std::endl;
-        return filesAndDirs;
+    int fd = open(path.c_str(), O_RDONLY | O_DIRECTORY);
+    if (fd == -1) {
+        perror("smash error: open failed");
+        return result;
     }
 
-    struct dirent* entry;
-    while ((entry = readdir(dir)) != nullptr){
-        // Skip '.' and '..'
-        if (entry->d_name[0] == '.' && (entry->d_name[1] == '\0' ||
-            (entry->d_name[1] == '.' && entry->d_name[2] == '\0'))){
-            continue;
+    char buf[BUF_SIZE];
+    while (true) {
+        int nread = syscall(SYS_getdents64, fd, buf, BUF_SIZE);
+        if (nread == -1) {
+            perror("smash error: getdents64 failed");
+            close(fd);
+            return std::vector<std::string>();
         }
+        if (nread == 0)
+            break;
 
-        // Skip symbolic links
-        if (entry->d_type == DT_LNK){
-            continue;
+        for (int bpos = 0; bpos < nread;) {
+            struct linux_dirent64* d = (struct linux_dirent64*)(buf + bpos);
+            result.emplace_back(d->d_name);
+            bpos += d->d_reclen;
         }
-
-        filesAndDirs.push_back(entry->d_name);
     }
 
-    closedir(dir);
-    return filesAndDirs;
-    
+    close(fd);
+    return result;
 }
+
+//std::vector<std::string> list_directory(const std::string& path){
+//    std::vector<std::string> filesAndDirs;
+//    DIR* dir = opendir(path.c_str());
+//    if (dir == nullptr){
+//        std::cerr << "Could not open directory: " << path << std::endl;
+//        return filesAndDirs;
+//    }
+//
+//    struct dirent* entry;
+//    while ((entry = readdir(dir)) != nullptr){
+//        // Skip '.' and '..'
+//        if (entry->d_name[0] == '.' && (entry->d_name[1] == '\0' ||
+//            (entry->d_name[1] == '.' && entry->d_name[2] == '\0'))){
+//            continue;
+//        }
+//
+//        // Skip symbolic links
+//        if (entry->d_type == DT_LNK){
+//            continue;
+//        }
+//
+//        filesAndDirs.push_back(entry->d_name);
+//    }
+//
+//    closedir(dir);
+//    return filesAndDirs;
+//
+//}

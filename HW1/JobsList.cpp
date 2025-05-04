@@ -27,7 +27,7 @@ JobsList::JobEntry* JobsList::getJobById(int jobId){
     auto entry = jobs.find(jobId);
 
     // if the entry doesn't exist or the job in the entry already finished
-    if (entry == jobs.end() || waitpid(entry->second.getJobPid(), nullptr, WNOHANG) != 0)
+    if (entry == jobs.end())
         return nullptr;
     return &entry->second;
 }
