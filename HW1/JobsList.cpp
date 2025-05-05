@@ -77,15 +77,8 @@ void JobsList::printJobsList(std::string l_str, std::string r_str, bool use_pid)
 void JobsList::removeFinishedJobs(){
     std::vector<int> jids_updated;
     for (auto& jid : jids){
-        if (kill(jobs[jid].getJobPid(), 0) == -1){ //check if a job didn't finish
-            if (errno == ESRCH){
-                jobs.erase(jid);
-            }
-            else{
-                SYSCALL_FAIL("kill");
-                jids_updated.push_back(jid);
-                return;
-            }
+        if (waitpid(jobs[jid].getJobPid(), nullptr, WNOHANG) == 0){ //check if a job didn't finish
+            jobs.erase(jid);
         }
         else{
             jids_updated.push_back(jid);

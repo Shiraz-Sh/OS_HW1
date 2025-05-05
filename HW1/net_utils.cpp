@@ -25,11 +25,15 @@ std::string get_ip(const char* iface){
     // send the request for the address
     if (ioctl(fd, SIOCGIFADDR, &ifr) == -1){
         SYSCALL_FAIL("ioctl");
-        close(fd);
+        if (close(fd) == -1){
+            SYSCALL_FAIL("close");
+        }
         return "";
     }
 
-    close(fd);
+    if (close(fd) == -1){
+        SYSCALL_FAIL("close");
+    }
     // extract the address from the request result in IPv4 format 
     return inet_ntoa(((struct sockaddr_in*)&ifr.ifr_addr)->sin_addr);
 }
@@ -47,10 +51,14 @@ std::string get_subnet_mask(const char* iface){
     // send the request from the subnet mask
     if (ioctl(fd, SIOCGIFNETMASK, &ifr) == -1){
         SYSCALL_FAIL("ioctl");
-        close(fd);
+        if (close(fd) == -1){
+            SYSCALL_FAIL("close");
+        }
         return "";
     }
-    close(fd);
+    if (close(fd) == -1){
+        SYSCALL_FAIL("close");
+    }
     return inet_ntoa(((struct sockaddr_in*)&ifr.ifr_addr)->sin_addr);
 }
 
@@ -72,7 +80,9 @@ bool interface_exists(const std::string& iface_name){
 
     if (ioctl(fd, SIOCGIFCONF, &ifc) < 0){
         SYSCALL_FAIL("ioctl");
-        close(fd);
+        if (close(fd) == -1){
+            SYSCALL_FAIL("close");
+        }
         return false;
     }
 
@@ -85,7 +95,9 @@ bool interface_exists(const std::string& iface_name){
             return true;
     }
 
-    close(fd);
+    if (close(fd) == -1){
+        SYSCALL_FAIL("close");
+    }
     return false;
 }
 

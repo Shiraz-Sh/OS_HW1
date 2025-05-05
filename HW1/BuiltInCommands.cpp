@@ -152,11 +152,10 @@ void FgCommand::execute() {
 
 void FgCommand::bringJobToForeground(int jobID) {
     SmallShell& smash = SmallShell::getInstance();
-    auto job = smash.jobs_list.getJobById(jobID);
-
-    std::cout << cmd_line << " " << job->getJobPid() << std::endl;
-
-    pid_t wpid = waitpid(job->getJobPid(), nullptr, 0);
+    // smash waits for certain job to finish, meaning it will be brought to foreground
+    pid_t pid = smash.jobs_list.getJobById(jobID)->getJobPid();
+    smash.set_fg_pid(pid);
+    pid_t wpid = waitpid(pid, nullptr, 0);
     if (wpid == -1){
         SYSCALL_FAIL("waitpid");
         return;
@@ -310,7 +309,10 @@ bool WatchProcCommand::get_mem_usage_MB(pid_t pid, double& mem) {
     constexpr size_t BUF_SIZE = 8192;
     char buffer[BUF_SIZE];
     ssize_t bytes_read = read(fd, buffer, BUF_SIZE - 1);
-    close(fd);
+    if (close(fd) == -1){
+        SYSCALL_FAIL("close");
+        return false;
+    }
     if (bytes_read <= 0){
         SYSCALL_FAIL("read");
         return false;
@@ -343,7 +345,10 @@ long WatchProcCommand::get_process_cpu_time(pid_t pid) {
 
     char buffer[4096];
     ssize_t sizeRead = read(fd, buffer, sizeof(buffer) - 1);
-    close(fd);
+    if (close(fd) == -1){
+        SYSCALL_FAIL("close");
+        return -1;
+    }
     if (sizeRead <= 0){
         SYSCALL_FAIL("read");
         return -1;
@@ -374,7 +379,10 @@ long WatchProcCommand::get_total_cpu_time() {
 
     char buffer[4096];
     ssize_t sizeRead = read(fd, buffer, sizeof(buffer) - 1);
-    close(fd);
+    if (close(fd) == -1){
+        SYSCALL_FAIL("close");
+        return -1;
+    }
     if (sizeRead <= 0){
         SYSCALL_FAIL("read");
         return -1;

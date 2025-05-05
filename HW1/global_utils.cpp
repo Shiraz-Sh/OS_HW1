@@ -46,7 +46,10 @@ std::vector<char> read_file(const std::string& path){
         if (nread < static_cast<ssize_t>(chunk_size)) break; // finished reading
     }
 
-    close(fd);
+    if (close(fd) == -1){
+        SYSCALL_FAIL("close");
+        return std::vector<char>();
+    }
     return buffer;
 }
 
@@ -72,7 +75,9 @@ std::vector<std::string> list_directory(const std::string& path) {
         int nread = syscall(SYS_getdents64, fd, buf, BUF_SIZE);
         if (nread == -1) {
             SYSCALL_FAIL("getdents64");
-            close(fd);
+            if (close(fd) == -1){
+                SYSCALL_FAIL("close");
+            }
             return std::vector<std::string>();
         }
         if (nread == 0)
@@ -85,6 +90,8 @@ std::vector<std::string> list_directory(const std::string& path) {
         }
     }
 
-    close(fd);
+    if (close(fd) == -1){
+        SYSCALL_FAIL("close");
+    }
     return result;
 }

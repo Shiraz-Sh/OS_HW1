@@ -81,6 +81,8 @@ class SmallShell {
 private:
     // TODO: Add your data members
     static std::string chprompt;
+    static pid_t fg_pid;
+    static const pid_t DEFAULT_PID = -1;
     SmallShell();
 
 public:
@@ -111,7 +113,12 @@ public:
 
     std::string getChprompt() { return chprompt; }
 
-    void executeCommand(const char *cmd_line);
+    void executeCommand(const char* cmd_line);
+
+    void set_fg_pid(pid_t pid);
+    void reset_fg_pid();
+    pid_t get_fg_pid();
+    bool is_fg_empty();
 
     // TODO: add extra methods as needed
 };

@@ -36,7 +36,9 @@ void WhoamiCommand::execute() {
     while ((bytes_read = read(fd, buffer, BUF_SIZE)) > 0) {
         content.append(buffer, bytes_read);
     }
-    close(fd);
+    if (close(fd) == -1){
+        SYSCALL_FAIL("close");
+    }
 
     if (bytes_read == -1) {
         SYSCALL_FAIL("read");
@@ -116,11 +118,18 @@ void PipeCommand::execute() {
         } else {                               // we use operator '|&'
             dup2(pipefd[1], STDERR_FILENO);      // replace stderr with pipe’s write end
         }
-        close(pipefd[0]);   // close unused read end
-        close(pipefd[1]);   // close write end after dup2
+
+        int res1 = close(pipefd[0]);
+        int res2 = close(pipefd[1]);
+        if (res1 == -1 || res2 == -1){  // close unused read end
+            SYSCALL_FAIL("close");
+            exit(0);
+        }
+        
         cmd1->execute();
         exit(0);
     }
+
     pid_t pid2 = fork();
     if (pid2 == -1) {
         SYSCALL_FAIL("fork");
@@ -136,15 +145,27 @@ void PipeCommand::execute() {
         } else {                             // we use operator '|&'
             dup2(pipefd[0], STDIN_FILENO);      // replace stdin with pipe's read end
         }
-        close(pipefd[0]);
-        close(pipefd[1]);
+
+        int res1 = close(pipefd[0]);
+        int res2 = close(pipefd[1]);
+        if (res1 == -1 || res2 == -1){  // close unused read end
+            SYSCALL_FAIL("close");
+            exit(0);
+        }
         cmd2->execute();
         exit(0);
     }
 
     // parent process - only the parent comes here thanks to exit()
-    close(pipefd[0]);
-    close(pipefd[1]);
+
+    int res1 = close(pipefd[0]);
+    int res2 = close(pipefd[1]);
+    if (res1 == -1 || res2 == -1){  // close unused read end
+        SYSCALL_FAIL("close");
+        free(cmd_line2);
+        delete[] cmd_line1;
+        exit(0);
+    }
 
     if (waitpid(pid1, nullptr, 0) == -1)
         SYSCALL_FAIL("waitpid");
@@ -194,7 +215,10 @@ void RedirectionCommand::execute() {
         setpgrp();
 
         // use dst as the stdout.
-        close(1);
+        if (close(1) == -1){
+            SYSCALL_FAIL("close");
+            return;
+        }
         int fd;
         if (append)
             fd = open(dst.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0666); // allow append
@@ -209,12 +233,16 @@ void RedirectionCommand::execute() {
         // run the command using the smash create command.
         Command* cmd = SmallShell::getInstance().CreateCommand(src.c_str());
         cmd->execute();
-        close(fd);
+        if (close(fd) == -1){
+            SYSCALL_FAIL("close");
+        }
         exit(0);
     }
-
-    wait(nullptr);
-
+    FORK_NOTIFY(pid,
+        if (wait(nullptr) == -1){
+            SYSCALL_FAIL("wait");
+        }
+    )
     cleanup();
 }
 
@@ -314,3 +342,4 @@ void DuCommand::execute() {
 
     this->cleanup();
 }
+

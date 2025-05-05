@@ -19,10 +19,9 @@
 
 #define MAX_ARGS 20
 
-volatile pid_t foreground_pid = -1;
+// volatile pid_t foreground_pid = -1;
 
 using namespace std;
-
 
 void Command::prepare(){
     count = _parseCommandLine(this->cmd_line, args);
@@ -51,7 +50,6 @@ bool checkIORedirection(const char* cmd_line){
     return std::string(cmd_line).find(">") != std::string::npos;
 }
 
-
 bool checkPipe(const char* cmd_line){
     return std::string(cmd_line).find("|") != std::string::npos;
 }
@@ -72,6 +70,8 @@ void complexExternalCommand::execute() {
             nullptr                     // must terminat by a null pointer
     };
 
+    
+
     pid_t pid = fork();
     if (pid == -1) {
         SYSCALL_FAIL("fork");
@@ -82,10 +82,12 @@ void complexExternalCommand::execute() {
         execv("/bin/bash", newArgv);
         // only runs if execv failed, since execv does not return on success
         SYSCALL_FAIL("execv");
-    } else {
-        pid_t ret = wait(NULL);
-        if (ret == -1)
+    }
+    else{
+        FORK_NOTIFY(pid, 
+        if (wait(nullptr) == -1)
             SYSCALL_FAIL("wait");
+        )
     }
 
     this->cleanup();
@@ -93,6 +95,7 @@ void complexExternalCommand::execute() {
 }
 
 std::string SmallShell::chprompt;
+pid_t SmallShell::fg_pid = -1;
 
 SmallShell::SmallShell() : jobs_list(JobsList::getInstance()), alias_table(AliasTable::getInstance()){
 // TODO: add your implementation
@@ -100,6 +103,22 @@ SmallShell::SmallShell() : jobs_list(JobsList::getInstance()), alias_table(Alias
 
 SmallShell::~SmallShell() {
 // TODO: add your implementation
+}
+
+pid_t SmallShell::get_fg_pid(){
+    return fg_pid;
+}
+
+void SmallShell::set_fg_pid(pid_t pid){
+    fg_pid = pid;
+}
+
+void SmallShell::reset_fg_pid(){
+    fg_pid = DEFAULT_PID;
+}
+
+bool SmallShell::is_fg_empty(){
+    return fg_pid == DEFAULT_PID;
 }
 
 /**
@@ -183,27 +202,8 @@ void SmallShell::executeCommand(const char* cmd_line){
 
     if (background)
         JobsList::getInstance().addJob(cmd, std::string(cmd_line));
-    else {
-        if (dynamic_cast<QuitCommand*>(cmd) != nullptr) {
-            // it's quit command, terminate the smash process itself, don't need to fork
-            cmd->execute();
-        } else {
-            pid_t processPID = fork();
-            if (processPID == 0){
-                // son
-                setpgrp();
-                cmd->execute();
-                exit(0);
-            } else if (processPID == -1) {  // error
-                SYSCALL_FAIL("fork");
-            }
-            else{
-                // parent
-                foreground_pid = processPID;
-                wait(NULL);
-                foreground_pid = -1;  // reset when done
-            }
-        }
+    else{
+        cmd->execute();
     }
     // TODO: needs to be changed and execute on processes that weren't fork.
     // Please note that you must fork smash process for some commands (e.g., external commands....)
@@ -243,9 +243,10 @@ void SimpleExternalCommand::execute(){
         SYSCALL_FAIL("execv");
         exit(-1);
     }
-    else if (wait(nullptr) < 0)
-        SYSCALL_FAIL("wait");
 
+    FORK_NOTIFY(pid,
+        if (wait(nullptr) == -1)
+            SYSCALL_FAIL("wait");
+    )
     cleanup();
 }
-
