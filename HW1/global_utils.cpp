@@ -63,7 +63,7 @@ std::vector<std::string> list_directory(const std::string& path) {
 
     int fd = open(path.c_str(), O_RDONLY | O_DIRECTORY);
     if (fd == -1) {
-        perror("smash error: open failed");
+        SYSCALL_FAIL("open");
         return result;
     }
 
@@ -71,7 +71,7 @@ std::vector<std::string> list_directory(const std::string& path) {
     while (true) {
         int nread = syscall(SYS_getdents64, fd, buf, BUF_SIZE);
         if (nread == -1) {
-            perror("smash error: getdents64 failed");
+            SYSCALL_FAIL("getdents64");
             close(fd);
             return std::vector<std::string>();
         }
@@ -88,32 +88,3 @@ std::vector<std::string> list_directory(const std::string& path) {
     close(fd);
     return result;
 }
-
-//std::vector<std::string> list_directory(const std::string& path){
-//    std::vector<std::string> filesAndDirs;
-//    DIR* dir = opendir(path.c_str());
-//    if (dir == nullptr){
-//        std::cerr << "Could not open directory: " << path << std::endl;
-//        return filesAndDirs;
-//    }
-//
-//    struct dirent* entry;
-//    while ((entry = readdir(dir)) != nullptr){
-//        // Skip '.' and '..'
-//        if (entry->d_name[0] == '.' && (entry->d_name[1] == '\0' ||
-//            (entry->d_name[1] == '.' && entry->d_name[2] == '\0'))){
-//            continue;
-//        }
-//
-//        // Skip symbolic links
-//        if (entry->d_type == DT_LNK){
-//            continue;
-//        }
-//
-//        filesAndDirs.push_back(entry->d_name);
-//    }
-//
-//    closedir(dir);
-//    return filesAndDirs;
-//
-//}

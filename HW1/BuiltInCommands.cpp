@@ -152,8 +152,11 @@ void FgCommand::execute() {
 
 void FgCommand::bringJobToForeground(int jobID) {
     SmallShell& smash = SmallShell::getInstance();
-    // smash waits for certain job to finish, meaning it will be brought to foreground
-    pid_t wpid = waitpid(smash.jobs_list.getJobById(jobID)->getJobPid(), nullptr, 0);
+    auto job = smash.jobs_list.getJobById(jobID);
+
+    std::cout << cmd_line << " " << job->getJobPid() << std::endl;
+
+    pid_t wpid = waitpid(job->getJobPid(), nullptr, 0);
     if (wpid == -1){
         SYSCALL_FAIL("waitpid");
         return;

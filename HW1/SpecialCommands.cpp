@@ -260,7 +260,7 @@ void NetInfoCommand::execute(){
 int get_size_recursive(const std::string& path) {
     struct stat info;
     if (stat(path.c_str(), &info) == -1) {
-        perror("smash error: stat failed");
+        SYSCALL_FAIL("stat");
         return -1;
     }
 
@@ -283,35 +283,6 @@ int get_size_recursive(const std::string& path) {
     return 0; // non-regular, non-directory files
 }
 
-//int get_size_recursive(const std::string& path){
-//    struct stat info;
-//    int res = stat(path.c_str(), &info);
-//    if (res == -1){
-//        SYSCALL_FAIL("stat");
-//        return -1;
-//    }
-//    else if (res == 0 && S_ISREG(info.st_mode)){
-//        return (int) info.st_size;
-//    }
-//    else if (res == 0 && S_ISDIR(info.st_mode)){
-//        int size = 0;
-//
-//        auto names = list_directory(path);
-//        for (auto name : names){
-//            if (name.compare(".") == 0 || name.compare("..") == 0){
-//                continue;
-//            }
-//            int val = get_size_recursive(path + "/" + name);
-//            if (val == -1){
-//                return -1;
-//            }
-//            size += val;
-//        }
-//        return size;
-//    }
-//    return 0;
-//}
-
 void DuCommand::execute() {
     this->prepare();
 
@@ -325,7 +296,7 @@ void DuCommand::execute() {
 
     struct stat info;
     if (stat(target_dir.c_str(), &info) == -1) {
-        perror("smash error: stat failed");
+        SYSCALL_FAIL("stat");
         this->cleanup();
         return;
     }
