@@ -181,22 +181,28 @@ void KillCommand::execute() {
     char* signumChar = args[1] + 1;
     if (count != 3) {
         std::cerr << "smash error: kill: invalid arguments" << std::endl;
+        this->cleanup();
+        return;
     }
     if (*args[1] != '-' || !isNumber(signumChar) || !isNumber(args[2])) {
         std::cerr << "smash error: kill: invalid arguments" << std::endl;
+        this->cleanup();
+        return;
     }
 
     int jobId = std::stoi(std::string(args[2]));
     auto job = JobsList::getInstance().getJobById(jobId);
     if (job == nullptr) {
         std::cerr << "smash error: kill: job-id " << jobId << " does not exist" << std::endl;
+        this->cleanup();
+        return;
     }
 
     int signum = std::stoi(std::string(signumChar));
     pid_t jobPID = job->getJobPid();
-    if (kill(jobPID, signum) == 0) {  // sucsses
-        std::cout << "signal number " << signum << " was sent to pid " << jobPID << std::endl;
-    } else {
+    int res = kill(jobPID, signum);
+    std::cout << "signal number " << signum << " was sent to pid " << jobPID << std::endl;
+    if (res != 0) {  // sucsses
         SYSCALL_FAIL("kill");
     }
     this->cleanup();
