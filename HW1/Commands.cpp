@@ -165,8 +165,9 @@ Command* SmallShell::CreateCommand(const char* cmd_line, bool* run_on_background
     }
     else if (checkPipe(cmd_line)){
         res = new PipeCommand(cmd_line);
+        *run_on_background = false;
     }
-    else if (builtin_cmds.find(firstWord) != builtin_cmds.end()){        // check if built-in command
+    else if (builtin_cmds.find(firstWord) != builtin_cmds.end()){   // check if built-in command
         res = builtin_cmds[firstWord];
         *run_on_background = false;
     }
