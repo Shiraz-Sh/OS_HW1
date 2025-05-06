@@ -19,8 +19,6 @@
 
 #define MAX_ARGS 20
 
-// volatile pid_t foreground_pid = -1;
-
 using namespace std;
 
 void Command::prepare(){
