@@ -215,8 +215,10 @@ void SimpleExternalCommand::execute(){
 
     // int stat;
     pid_t pid = fork();
-    if (pid < 0)
+    if (pid < 0) {
         SYSCALL_FAIL("fork");
+        return;
+    }
     else if (pid == 0){
         // child
         setpgrp();
