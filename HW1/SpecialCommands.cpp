@@ -284,7 +284,6 @@ void NetInfoCommand::execute(){
     cleanup();
 }
 
-
 int get_size_recursive(const std::string& path) {
     struct stat info;
     if (stat(path.c_str(), &info) == -1) {

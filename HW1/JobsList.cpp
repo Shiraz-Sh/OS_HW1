@@ -79,9 +79,7 @@ void JobsList::removeFinishedJobs(){
     std::vector<int> jids_updated;
     for (auto& jid : jids){
         int res = waitpid(jobs[jid].getJobPid(), nullptr, WNOHANG);
-        if (res < 0)
-            SYSCALL_FAIL("waitpid");
-        else if (res == 0) //check if a job didn't finish
+        if (res == 0) //check if a job didn't finish
             jids_updated.push_back(jid);
         else
             jobs.erase(jid);
