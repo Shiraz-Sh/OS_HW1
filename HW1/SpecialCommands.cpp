@@ -8,6 +8,8 @@
 #include <sstream>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <utility>
+#include <set>
 
 #include "SpecialCommands.hpp"
 #include "parsing_utils.hpp"
@@ -178,7 +180,7 @@ void PipeCommand::execute() {
     delete cmd2;
 }
 
-void RedirectionCommand::execute() {
+void RedirectionCommand::execute(){
     // TODO: implement
     prepare();
 
@@ -206,46 +208,53 @@ void RedirectionCommand::execute() {
             dst = _trim(line.substr(pos + 1));
     }
 
-    // parse the source command
-    pid_t pid = fork();
-    if (pid < 0){
-        SYSCALL_FAIL("fork");
+    int fd;
+    if (append)
+        fd = open(dst.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0666); // allow append
+    else
+        fd = open(dst.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0666); // force truncation
+    if (fd == -1){
+        SYSCALL_FAIL("open");
+        cleanup();
         return;
     }
-    else if (pid == 0){
-        // child process
-        setpgrp();
 
-        // use dst as the stdout.
-        if (close(1) == -1){
-            SYSCALL_FAIL("close");
-            return;
-        }
-        int fd;
-        if (append)
-            fd = open(dst.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0666); // allow append
-        else
-            fd = open(dst.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0666); // force truncation
-
-        if (fd == -1){
-            SYSCALL_FAIL("open");
-            exit(-1);
-        }
-
-        // run the command using the smash create command.
-        Command* cmd = SmallShell::getInstance().CreateCommand(src.c_str());
-        cmd->execute();
+    // Save current stdout and close it
+    int saved_stdout = dup(1);
+    if (saved_stdout == -1){
+        SYSCALL_FAIL("dup");
         if (close(fd) == -1){
             SYSCALL_FAIL("close");
         }
-        delete cmd;
-        exit(0);
+        cleanup();
+        return;
     }
-    FORK_NOTIFY(pid,
-        if (wait(nullptr) == -1){
-            SYSCALL_FAIL("wait");
+
+    // Redirect stdout to file
+    if (dup2(fd, 1) == -1){
+        SYSCALL_FAIL("dup2");
+        if (close(fd) == -1){
+            SYSCALL_FAIL("close");
         }
-    )
+        cleanup();
+        return;
+    }
+    if (close(fd) == -1){
+        SYSCALL_FAIL("close");
+    }
+
+    // run the command using the smash create command.
+    Command* cmd = SmallShell::getInstance().CreateCommand(src.c_str());
+    cmd->execute();
+    delete cmd;
+    
+    if (dup2(saved_stdout, 1) == -1){
+        SYSCALL_FAIL("dup2");
+    }
+    if (close(saved_stdout) == -1){
+        SYSCALL_FAIL("close");
+    }
+
     cleanup();
 }
 
@@ -260,19 +269,21 @@ void NetInfoCommand::execute(){
         std::cerr << "smash error: netinfo: interface " <<  args[1] << " does not exist " << std::endl;
         return;
     }
+    std::string ip = get_ip(args[1]);
+    std::cout << "IP Address: " << ((ip.compare("") == 0) ? "" : ip) << std::endl;
 
-    std::cout << "IP Address: " << get_ip(args[1]) << std::endl;
-    std::cout << "Subnet Mask: " << get_subnet_mask(args[1]) << std::endl;
+    std::string subnetmask = get_subnet_mask(args[1]);
+    std::cout << "Subnet Mask: " << ((subnetmask.compare("") == 0) ? "" : subnetmask) << std::endl;
 
     // print gateway if exists else None
     std::string gw = get_default_gateway();
-    std::cout << "Default Gateway: " << ((gw.empty()) ? "None" : gw) << std::endl;
+    std::cout << "Default Gateway: " << ((gw.empty()) ? "" : gw) << std::endl;
 
     // print DNS servers else None
     std::cout << "DNS Servers: ";
     auto servers = get_dns_servers();
     if (servers.empty()){
-        std::cout << "None" << std::endl;
+        std::cout << "" << std::endl;
     }
     else{
         std::cout << servers.front();
@@ -287,34 +298,52 @@ void NetInfoCommand::execute(){
     cleanup();
 }
 
-int get_size_recursive(const std::string& path) {
+std::set<std::pair<dev_t, ino_t>> seen_inodes;
+
+int get_size_recursive(const std::string& path){
     struct stat info;
-    
-    if (stat(path.c_str(), &info) == -1){
-        SYSCALL_FAIL("stat");
+
+    // Don't follow symlinks
+    if (lstat(path.c_str(), &info) == -1){
+        SYSCALL_FAIL("lstat");
         return -1;
     }
 
-    if (S_ISREG(info.st_mode)) {
-        return info.st_size; // size in bytes
+    // Check for symlink
+    if (S_ISLNK(info.st_mode)){
+        // Just count the symlink file itself (not its target)
+        return info.st_blocks;
     }
 
-    if (S_ISDIR(info.st_mode)) {
-        int total_size = 0;
+    // Check for regular files
+    if (S_ISREG(info.st_mode)){
+        auto inode_key = std::make_pair(info.st_dev, info.st_ino);
+        if (seen_inodes.count(inode_key)){
+            return 0;
+        }
+        seen_inodes.insert(inode_key);
+        return info.st_blocks;
+    }
+
+    if (S_ISDIR(info.st_mode)){
+        int total_blocks = info.st_blocks;
         auto entries = list_directory(path);
-        total_size += info.st_size;
+
         for (const auto& name : entries){
-            if (name.compare(".") == 0 || name.compare("..") == 0)
+            if (name == "." || name == "..")
                 continue;
-            int sub_size = get_size_recursive(path + "/" + name);
+
+            std::string full_path = path + "/" + name;
+            int sub_size = get_size_recursive(full_path);
             if (sub_size == -1)
                 return -1;
-            total_size += sub_size;
+
+            total_blocks += sub_size;
         }
-        return total_size;
+        return total_blocks;
     }
 
-    return 0; // non-regular, non-directory files
+    return info.st_blocks;
 }
 
 void DuCommand::execute() {
@@ -329,21 +358,15 @@ void DuCommand::execute() {
     std::string target_dir = (count == 1) ? "." : std::string(args[1]);
 
     struct stat info;
-    if (stat(target_dir.c_str(), &info) == -1) {
-        SYSCALL_FAIL("stat");
-        this->cleanup();
-        return;
-    }
-
-    if (!S_ISDIR(info.st_mode)) {
+    if (stat(target_dir.c_str(), &info) == -1 || !S_ISDIR(info.st_mode)){
         std::cerr << "smash error: du: directory " << target_dir << " does not exist" << std::endl;
         this->cleanup();
         return;
     }
 
-    int total_bytes = get_size_recursive(target_dir);
-    if (total_bytes != -1) {
-        std::cout << "Total disk usage: " << (total_bytes / 1024) << " KB" << std::endl;
+    int total_blocks = get_size_recursive(target_dir);
+    if (total_blocks != -1) {
+        std::cout << "Total disk usage: " << (total_blocks * 512 + 1023) / 1024 << " KB" << std::endl;
     }
 
     this->cleanup();

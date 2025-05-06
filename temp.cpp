@@ -6,6 +6,10 @@ bool is_0_open(){
     return read(0, &dummy, 0) >= 0;
 }
 
+void infty(){
+    while (true){}
+}
+
 int main(){
     bool res = is_0_open();
 
@@ -25,5 +29,6 @@ int main(){
     else{
         std::cout << "Closed" << std::endl;
     }
+    infty();
     return 0;
 }
