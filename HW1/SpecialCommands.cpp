@@ -70,114 +70,114 @@ void WhoamiCommand::execute() {
     this->cleanup();
 }
 
-void PipeCommand::execute() {
-    char* pipe_pos = strchr(cmd_line, '|'); // Find the '|' character
+void PipeCommand::execute(){
+    // int pipe_pos = cmd_line.find('|'); // Find the '|' character
 
-    // Determine if it's a simple pipe or error pipe
-    bool isSimplePipe = !(pipe_pos[1] == '&');
+    // // Determine if it's a simple pipe or error pipe
+    // bool isSimplePipe = !(pipe_pos[1] == '&');
 
-    // copy the first part before '|'
-    size_t len1 = pipe_pos - cmd_line;
-    char* cmd_line1 = new char[len1 + 1]; // +1 for null terminator
-    strncpy(cmd_line1, cmd_line, len1);
-    cmd_line1[len1] = '\0'; // null-terminate
+    // // copy the first part before '|'
+    // size_t len1 = pipe_pos - cmd_line;
+    // char* cmd_line1 = new char[len1 + 1]; // +1 for null terminator
+    // strncpy(cmd_line1, cmd_line, len1);
+    // cmd_line1[len1] = '\0'; // null-terminate
 
-    char* cmd2_start;
-    // copy the second part after '|'
-    if (isSimplePipe) {
-        cmd2_start = pipe_pos + 1;
-    } else {
-        cmd2_start = pipe_pos + 2;
-    }
+    // char* cmd2_start;
+    // // copy the second part after '|'
+    // if (isSimplePipe) {
+    //     cmd2_start = pipe_pos + 1;
+    // } else {
+    //     cmd2_start = pipe_pos + 2;
+    // }
 
-    // skip leading spaces in cmd_line2
-    while (*cmd2_start == ' ') ++cmd2_start;
-    char* cmd_line2 = strdup(cmd2_start);
+    // // skip leading spaces in cmd_line2
+    // while (*cmd2_start == ' ') ++cmd2_start;
+    // char* cmd_line2 = strdup(cmd2_start);
 
-    // Gets the relevant commands
-    SmallShell& smash = SmallShell::getInstance();
-    Command* cmd1 = smash.CreateCommand(cmd_line1);
-    Command* cmd2 = smash.CreateCommand(cmd_line2);
+    // // Gets the relevant commands
+    // SmallShell& smash = SmallShell::getInstance();
+    // Command* cmd1 = smash.CreateCommand(cmd_line1);
+    // Command* cmd2 = smash.CreateCommand(cmd_line2);
 
-    int pipefd[2];  // pipefd[0] for the read end and pipefd[1] for the write end
-    if (pipe(pipefd) == -1) {
-        SYSCALL_FAIL("pipe");
-        this->cleanup();
-        return;
-    }
+    // int pipefd[2];  // pipefd[0] for the read end and pipefd[1] for the write end
+    // if (pipe(pipefd) == -1) {
+    //     SYSCALL_FAIL("pipe");
+    //     this->cleanup();
+    //     return;
+    // }
 
-    pid_t pid1 = fork();
-    if (pid1 == -1){
-        SYSCALL_FAIL("fork");
-        this->cleanup();
-        return;
-    } else if (pid1 == 0) {      // first son process
-        // Redirect
-        setpgrp();
+    // pid_t pid1 = fork();
+    // if (pid1 == -1){
+    //     SYSCALL_FAIL("fork");
+    //     this->cleanup();
+    //     return;
+    // } else if (pid1 == 0) {      // first son process
+    //     // Redirect
+    //     setpgrp();
 
-        if (isSimplePipe){                   // we use operator '|'
-            dup2(pipefd[1], STDOUT_FILENO);     // replace stdout with pipe's write end
-        } else {                               // we use operator '|&'
-            dup2(pipefd[1], STDERR_FILENO);      // replace stderr with pipe’s write end
-        }
+    //     if (isSimplePipe){                   // we use operator '|'
+    //         dup2(pipefd[1], STDOUT_FILENO);     // replace stdout with pipe's write end
+    //     } else {                               // we use operator '|&'
+    //         dup2(pipefd[1], STDERR_FILENO);      // replace stderr with pipe’s write end
+    //     }
 
-        int res1 = close(pipefd[0]);
-        int res2 = close(pipefd[1]);
-        if (res1 == -1 || res2 == -1){  // close unused read end
-            SYSCALL_FAIL("close");
-            exit(0);
-        }
+    //     int res1 = close(pipefd[0]);
+    //     int res2 = close(pipefd[1]);
+    //     if (res1 == -1 || res2 == -1){  // close unused read end
+    //         SYSCALL_FAIL("close");
+    //         exit(0);
+    //     }
         
-        cmd1->execute();
-        exit(0);
-    }
+    //     cmd1->execute();
+    //     exit(0);
+    // }
 
-    pid_t pid2 = fork();
-    if (pid2 == -1) {
-        SYSCALL_FAIL("fork");
-        this->cleanup();
-        return;
-    }
-    else if (pid2 == 0){       // second son process
-        setpgrp();
+    // pid_t pid2 = fork();
+    // if (pid2 == -1) {
+    //     SYSCALL_FAIL("fork");
+    //     this->cleanup();
+    //     return;
+    // }
+    // else if (pid2 == 0){       // second son process
+    //     setpgrp();
         
-        // Redirect
-        if (isSimplePipe) {                 // we use operator '|'
-            dup2(pipefd[0], STDIN_FILENO);     // replace stdin with pipe's read end
-        } else {                             // we use operator '|&'
-            dup2(pipefd[0], STDIN_FILENO);      // replace stdin with pipe's read end
-        }
+    //     // Redirect
+    //     if (isSimplePipe) {                 // we use operator '|'
+    //         dup2(pipefd[0], STDIN_FILENO);     // replace stdin with pipe's read end
+    //     } else {                             // we use operator '|&'
+    //         dup2(pipefd[0], STDIN_FILENO);      // replace stdin with pipe's read end
+    //     }
 
-        int res1 = close(pipefd[0]);
-        int res2 = close(pipefd[1]);
-        if (res1 == -1 || res2 == -1){  // close unused read end
-            SYSCALL_FAIL("close");
-            exit(0);
-        }
-        cmd2->execute();
-        exit(0);
-    }
+    //     int res1 = close(pipefd[0]);
+    //     int res2 = close(pipefd[1]);
+    //     if (res1 == -1 || res2 == -1){  // close unused read end
+    //         SYSCALL_FAIL("close");
+    //         exit(0);
+    //     }
+    //     cmd2->execute();
+    //     exit(0);
+    // }
 
-    // parent process - only the parent comes here thanks to exit()
+    // // parent process - only the parent comes here thanks to exit()
 
-    int res1 = close(pipefd[0]);
-    int res2 = close(pipefd[1]);
-    if (res1 == -1 || res2 == -1){  // close unused read end
-        SYSCALL_FAIL("close");
-        free(cmd_line2);
-        delete[] cmd_line1;
-        exit(0);
-    }
+    // int res1 = close(pipefd[0]);
+    // int res2 = close(pipefd[1]);
+    // if (res1 == -1 || res2 == -1){  // close unused read end
+    //     SYSCALL_FAIL("close");
+    //     free(cmd_line2);
+    //     delete[] cmd_line1;
+    //     exit(0);
+    // }
 
-    if (waitpid(pid1, nullptr, 0) == -1)
-        SYSCALL_FAIL("waitpid");
-    if (waitpid(pid2, nullptr, 0) == -1)
-        SYSCALL_FAIL("waitpid");
+    // if (waitpid(pid1, nullptr, 0) == -1)
+    //     SYSCALL_FAIL("waitpid");
+    // if (waitpid(pid2, nullptr, 0) == -1)
+    //     SYSCALL_FAIL("waitpid");
 
-    delete[] cmd_line1;
-    free(cmd_line2);
-    delete cmd1;
-    delete cmd2;
+    // delete[] cmd_line1;
+    // free(cmd_line2);
+    // delete cmd1;
+    // delete cmd2;
 }
 
 void RedirectionCommand::execute(){
@@ -244,7 +244,7 @@ void RedirectionCommand::execute(){
     }
 
     // run the command using the smash create command.
-    Command* cmd = SmallShell::getInstance().CreateCommand(src.c_str());
+    Command* cmd = SmallShell::getInstance().CreateCommand(src);
     cmd->execute();
     delete cmd;
     

@@ -24,7 +24,7 @@
 using namespace std;
 
 void Command::prepare(){
-    count = _parseCommandLine(std::string(this->cmd_line), args);
+    count = _parseCommandLine(this->cmd_line, args);
 }
 
 void Command::cleanup() {
@@ -38,20 +38,19 @@ void Command::cleanup() {
  * @param cmd_line
  * @return true if cmd_line contain '?' or '*'
  */
-bool checkWildcards(const char* cmd_line){
-    std::string command = std::string(cmd_line);
-    return command.find("?") != std::string::npos || command.find("*") != std::string::npos;
+bool checkWildcards(const std::string& cmd_line){
+    return cmd_line.find("?") != std::string::npos || cmd_line.find("*") != std::string::npos;
 }
 
 /**
  * Checks if > is found in the command (if only one > is found return true)
  */
-bool checkIORedirection(const char* cmd_line){
-    return std::string(cmd_line).find(">") != std::string::npos;
+bool checkIORedirection(const std::string& cmd_line){
+    return cmd_line.find(">") != std::string::npos;
 }
 
-bool checkPipe(const char* cmd_line){
-    return std::string(cmd_line).find("|") != std::string::npos;
+bool checkPipe(const std::string& cmd_line){
+    return cmd_line.find("|") != std::string::npos;
 }
 
 void complexExternalCommand::execute() {
@@ -124,12 +123,12 @@ bool SmallShell::is_fg_empty(){
 /**
 * Creates and returns a pointer to Command class which matches the given command line (cmd_line)
 */
-Command* SmallShell::CreateCommand(const char* cmd_line, bool* run_on_background){
+Command* SmallShell::CreateCommand(const std::string& cmd_line, bool* run_on_background){
     bool def;
     if (run_on_background == nullptr)
         run_on_background = &def;
 
-    string cmd_s = _trim(std::string(cmd_line));
+    string cmd_s = _trim(cmd_line);
     string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" \n"));
     char* args[MAX_ARGS];
     int count = _parseCommandLine(std::string(cmd_line), args); // allocate memory for args
@@ -156,12 +155,17 @@ Command* SmallShell::CreateCommand(const char* cmd_line, bool* run_on_background
     };
 
     Command* res = nullptr;
-    
-    if (checkIORedirection(cmd_line)){                      // check for io redirection or pipe usage
+
+    if (firstWord.compare("alias") == 0){ // alias is prior for everything else!
+        res = builtin_cmds[firstWord];
+        builtin_cmds[firstWord] = nullptr;
+        *run_on_background = false;
+    }
+    else if (checkIORedirection(cmd_line)){                         // check for io redirection
         res = new RedirectionCommand(cmd_line);
         *run_on_background = false;
     }
-    else if (checkPipe(cmd_line)){
+    else if (checkPipe(cmd_line)){                                  // check for pipe usage
         res = new PipeCommand(cmd_line);
         *run_on_background = false;
     }
@@ -177,7 +181,7 @@ Command* SmallShell::CreateCommand(const char* cmd_line, bool* run_on_background
     else if (alias_table.query(firstWord).first){                   // check for aliases
         auto alias_expansion = alias_table.query(firstWord).second;
         string rest_of_cmd = cmd_s.substr(firstWord.length());        
-        res = CreateCommand((alias_expansion + rest_of_cmd).c_str(), run_on_background);
+        res = CreateCommand(alias_expansion + rest_of_cmd, run_on_background);
     }
     else if (checkWildcards(cmd_line)){                             // check for external simple / complex command
         res = new complexExternalCommand(cmd_line);
@@ -205,13 +209,14 @@ Command* SmallShell::CreateCommand(const char* cmd_line, bool* run_on_background
     return res;
 }
 
-void SmallShell::executeCommand(const char* cmd_line){
-    bool background = _isBackgroundComamnd(std::string(cmd_line));
+void SmallShell::executeCommand(const char* raw_cmd_line){
+    std::string cmd_line(raw_cmd_line);
+    bool background = _isBackgroundComamnd(cmd_line);
 
     std::string no_bg_sign(cmd_line);
     _removeBackgroundSign(no_bg_sign);
 
-    Command* cmd = CreateCommand(no_bg_sign.c_str(), &background);
+    Command* cmd = CreateCommand(no_bg_sign, &background);
 
     if (background){
         JobsList::getInstance().addJob(cmd, no_bg_sign, cmd_line);

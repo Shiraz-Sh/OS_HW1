@@ -4,7 +4,7 @@
 
 class ChpromptCommand : public BuiltInCommand {
 public:
-    ChpromptCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {}
+    ChpromptCommand(const std::string& cmd_line) : BuiltInCommand(cmd_line) {}
 
     virtual ~ChpromptCommand() = default;
 
@@ -13,7 +13,7 @@ public:
 
 class ShowpidCommand : public BuiltInCommand {
 public:
-    ShowpidCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {}
+    ShowpidCommand(const std::string&  cmd_line) : BuiltInCommand(cmd_line){}
 
     virtual ~ShowpidCommand() = default;
 
@@ -22,7 +22,7 @@ public:
 
 class PwdCommand : public BuiltInCommand {
 public:
-    PwdCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {}
+    PwdCommand(const std::string&  cmd_line) : BuiltInCommand(cmd_line){}
 
     virtual ~PwdCommand() = default;
 
@@ -31,7 +31,7 @@ public:
 
 class CdCommand : public BuiltInCommand {
 public:
-    CdCommand(const char *cmd_line) : BuiltInCommand(cmd_line){}
+    CdCommand(const std::string&  cmd_line) : BuiltInCommand(cmd_line){}
 
     virtual ~CdCommand() = default;
 
@@ -47,7 +47,7 @@ public:
 
 class FgCommand : public BuiltInCommand{
 public:
-    FgCommand(const char *cmd_line) : BuiltInCommand(cmd_line){}
+    FgCommand(const std::string&  cmd_line) : BuiltInCommand(cmd_line){}
 
     virtual ~FgCommand() = default;
 
@@ -62,7 +62,7 @@ public:
 
 class JobsCommand : public BuiltInCommand{
 public:
-    JobsCommand(const char* cmd_line) : BuiltInCommand(cmd_line){}
+    JobsCommand(const std::string& cmd_line) : BuiltInCommand(cmd_line){}
 
     virtual ~JobsCommand() = default;
 
@@ -71,7 +71,7 @@ public:
 
 class QuitCommand : public BuiltInCommand{
 public:
-    QuitCommand(const char* cmd_line) : BuiltInCommand(cmd_line){}
+    QuitCommand(const std::string& cmd_line) : BuiltInCommand(cmd_line){}
 
     virtual ~QuitCommand() = default;
 
@@ -80,7 +80,7 @@ public:
 
 class KillCommand : public BuiltInCommand{
 public:
-    KillCommand(const char* cmd_line) : BuiltInCommand(cmd_line){}
+    KillCommand(const std::string& cmd_line) : BuiltInCommand(cmd_line){}
 
     virtual ~KillCommand() = default;
 
@@ -89,7 +89,7 @@ public:
 
 class AliasCommand : public BuiltInCommand{
 public:
-    AliasCommand(const char* cmd_line) : BuiltInCommand(cmd_line){}
+    AliasCommand(const std::string& cmd_line) : BuiltInCommand(cmd_line){}
 
     virtual ~AliasCommand() = default;
 
@@ -98,7 +98,7 @@ public:
 
 class UnAliasCommand : public BuiltInCommand {
 public:
-    UnAliasCommand(const char* cmd_line) : BuiltInCommand(cmd_line){}
+    UnAliasCommand(const std::string& cmd_line) : BuiltInCommand(cmd_line){}
 
     virtual ~UnAliasCommand() = default;
 
@@ -107,7 +107,7 @@ public:
 
 class WatchProcCommand : public BuiltInCommand{
 public:
-    WatchProcCommand(const char* cmd_line) : BuiltInCommand(cmd_line){}
+    WatchProcCommand(const std::string& cmd_line) : BuiltInCommand(cmd_line){}
 
     virtual ~WatchProcCommand() = default;
 
@@ -122,7 +122,7 @@ public:
 
 class UnSetEnvCommand : public BuiltInCommand{
 public:
-    UnSetEnvCommand(const char* cmd_line) : BuiltInCommand(cmd_line){}
+    UnSetEnvCommand(const std::string& cmd_line) : BuiltInCommand(cmd_line){}
 
     virtual ~UnSetEnvCommand() = default;
 

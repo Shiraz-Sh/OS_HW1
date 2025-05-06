@@ -5,10 +5,9 @@
 class RedirectionCommand : public Command {
     // TODO: Add your data members
 public:
-    explicit RedirectionCommand(const char *cmd_line) : Command(cmd_line) {};
+    explicit RedirectionCommand(const std::string& cmd_line) : Command(cmd_line){};
 
-    virtual ~RedirectionCommand() {
-    }
+    virtual ~RedirectionCommand() = default;
 
     void execute() override;
 };
@@ -16,30 +15,27 @@ public:
 class PipeCommand : public Command {
     // TODO: Add your data members
 public:
-    PipeCommand(const char *cmd_line) : Command(cmd_line) {};
+    PipeCommand(const std::string& cmd_line) : Command(cmd_line){};
 
-    virtual ~PipeCommand() {
-    }
+    virtual ~PipeCommand() = default;
 
     void execute() override;
 };
 
 class DiskUsageCommand : public Command {
 public:
-    DiskUsageCommand(const char *cmd_line) : Command(cmd_line) {};
+    DiskUsageCommand(const std::string& cmd_line) : Command(cmd_line){};
 
-    virtual ~DiskUsageCommand() {
-    }
+    virtual ~DiskUsageCommand() = default;
 
     void execute() override;
 };
 
 class WhoamiCommand : public Command {
 public:
-    WhoamiCommand(const char *cmd_line) : Command(cmd_line) {};
+    WhoamiCommand(const std::string& cmd_line) : Command(cmd_line){};
 
-    virtual ~WhoamiCommand() {
-    }
+    virtual ~WhoamiCommand() = default;
 
     void execute() override;
 };
@@ -47,7 +43,7 @@ public:
 class NetInfoCommand : public Command {
     // TODO: Add your data members **BONUS: 10 Points**
 public:
-    NetInfoCommand(const char* cmd_line) : Command(cmd_line){}
+    NetInfoCommand(const std::string& cmd_line) : Command(cmd_line){}
 
     virtual ~NetInfoCommand() = default;
 
@@ -56,7 +52,7 @@ public:
 
 class DuCommand : public Command {
 public:
-    DuCommand(const char* cmd_line) : Command(cmd_line){}
+    DuCommand(const std::string& cmd_line) : Command(cmd_line){}
 
     virtual ~DuCommand() = default;
 

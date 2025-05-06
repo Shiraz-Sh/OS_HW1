@@ -20,15 +20,13 @@ class AliasTable;
 class Command{
     // TODO: Add your data members
 protected:
-    char* cmd_line;
+    std::string cmd_line;
     char* args[MAX_ARGS]; // Assumption - up to 20 args
     int count;
 public:
-    Command(const char *cmd_line) : cmd_line(strdup(cmd_line)) {}
+    Command(const std::string& cmd_line) : cmd_line(cmd_line){}
 
-    virtual ~Command(){
-        free(cmd_line);
-    }
+    virtual ~Command() = default;
 
     virtual void execute() = 0;
 
@@ -42,23 +40,25 @@ public:
 
 class BuiltInCommand : public Command {
 public:
-    BuiltInCommand(const char *cmd_line) : Command(cmd_line) {}
+    BuiltInCommand(const std::string& cmd_line) : Command(cmd_line){}
 
     virtual ~BuiltInCommand() = default;
+
+    void execute() override = 0;
 };
 
 class ExternalCommand : public Command {
 public:
-    ExternalCommand(const char *cmd_line) : Command(cmd_line) {}
+    ExternalCommand(const std::string& cmd_line) : Command(cmd_line){}
 
     virtual ~ExternalCommand() = default;
 
-    void execute() override {};
+    void execute() override = 0;
 };
 
 class complexExternalCommand : public ExternalCommand {
 public:
-    complexExternalCommand(const char* cmd_line) : ExternalCommand(cmd_line) {}
+    complexExternalCommand(const std::string& cmd_line) : ExternalCommand(cmd_line){}
 
     virtual ~complexExternalCommand() = default;
 
@@ -67,7 +67,7 @@ public:
 
 class SimpleExternalCommand : public ExternalCommand{
 public:
-    SimpleExternalCommand(const char* cmd_line) : ExternalCommand(cmd_line){}
+    SimpleExternalCommand(const std::string& cmd_line) : ExternalCommand(cmd_line){}
 
     virtual ~SimpleExternalCommand() = default;
 
@@ -91,7 +91,7 @@ public:
     JobsList& jobs_list;
     AliasTable& alias_table;
     
-    Command* CreateCommand(const char* cmd_line, bool* run_on_background = nullptr);
+    Command* CreateCommand(const std::string& cmd_line, bool* run_on_background = nullptr);
 
     SmallShell(SmallShell const &) = delete; // disable copy ctor
 
