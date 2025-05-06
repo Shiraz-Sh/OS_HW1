@@ -33,7 +33,7 @@ JobsList::JobEntry* JobsList::getJobById(int jobId){
     return &entry->second;
 }
 
-void JobsList::addJob(Command* cmd, std::string cmd_line, bool isStopped){
+void JobsList::addJob(Command* cmd, const std::string& no_bg_cmd, const std::string& cmd_line){
     removeFinishedJobs();
     pid_t pid = fork();
     if (pid < 0){

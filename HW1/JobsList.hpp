@@ -51,10 +51,10 @@ public:
     /**
      * Runs the command in the background and add it to the jobs list
      * @param cmd pointer to the command
+     * @param no_bg_cmd the command line the user entered without the &
      * @param cmd_line the line the user entered
-     * @param isStopped ????
      */
-    void addJob(Command* cmd, std::string cmd_line, bool isStopped = false);
+    void addJob(Command* cmd, const std::string& no_bg_cmd, const std::string& cmd_line);
 
     /**
     * prints to os for each job: `<l_str><pid / jid><r_str> <command + input>`
