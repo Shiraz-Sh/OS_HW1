@@ -200,8 +200,9 @@ void SmallShell::executeCommand(const char* cmd_line){
 
     Command* cmd = CreateCommand(no_bg_sign, &background);
 
-    if (background)
+    if (background){
         JobsList::getInstance().addJob(cmd, std::string(cmd_line));
+    }
     else{
         cmd->execute();
     }

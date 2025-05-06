@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <iostream>
+#include <algorithm>
 
 #include "JobsList.hpp"
 #include "Commands.hpp"
@@ -19,7 +20,7 @@ int JobsList::getMaxJobID() {
     if (isJobsListEmpty()){
         return 0;
     }
-    return jobs[jids.back()].getJobID();
+    return *std::max_element(jids.begin(), jids.end());
 }
 
 JobsList::JobEntry* JobsList::getJobById(int jobId){
@@ -77,12 +78,13 @@ void JobsList::printJobsList(std::string l_str, std::string r_str, bool use_pid)
 void JobsList::removeFinishedJobs(){
     std::vector<int> jids_updated;
     for (auto& jid : jids){
-        if (waitpid(jobs[jid].getJobPid(), nullptr, WNOHANG) == 0){ //check if a job didn't finish
-            jobs.erase(jid);
-        }
-        else{
+        int res = waitpid(jobs[jid].getJobPid(), nullptr, WNOHANG);
+        if (res < 0)
+            SYSCALL_FAIL("waitpid");
+        else if (res == 0) //check if a job didn't finish
             jids_updated.push_back(jid);
-        }
+        else
+            jobs.erase(jid);
     }
     jids = jids_updated;
 }
