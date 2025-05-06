@@ -43,6 +43,7 @@ void JobsList::addJob(Command* cmd, std::string cmd_line, bool isStopped){
     else if (pid == 0){
         setpgrp();
         cmd->execute();
+        delete cmd;
         exit(0);
     }
 

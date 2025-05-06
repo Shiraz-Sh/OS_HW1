@@ -18,6 +18,7 @@ private:
 
     static bool init_flag;
     static const std::vector<std::string> forbidden;
+    static const std::vector<std::string> forbidden_sym;
 public:
     ~AliasTable() = default;
 

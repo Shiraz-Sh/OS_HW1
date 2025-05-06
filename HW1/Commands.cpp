@@ -24,7 +24,7 @@
 using namespace std;
 
 void Command::prepare(){
-    count = _parseCommandLine(this->cmd_line, args);
+    count = _parseCommandLine(std::string(this->cmd_line), args);
 }
 
 void Command::cleanup() {
@@ -94,7 +94,7 @@ void complexExternalCommand::execute() {
     return;
 }
 
-std::string SmallShell::chprompt;
+std::string SmallShell::chprompt = "";
 pid_t SmallShell::fg_pid = -1;
 
 SmallShell::SmallShell() : jobs_list(JobsList::getInstance()), alias_table(AliasTable::getInstance()){
@@ -132,7 +132,7 @@ Command* SmallShell::CreateCommand(const char* cmd_line, bool* run_on_background
     string cmd_s = _trim(std::string(cmd_line));
     string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" \n"));
     char* args[MAX_ARGS];
-    int count = _parseCommandLine(cmd_line, args); // allocate memory for args
+    int count = _parseCommandLine(std::string(cmd_line), args); // allocate memory for args
 
     std::map<string, Command*> builtin_cmds = {
         {"chprompt", new ChpromptCommand(cmd_line)},
@@ -155,9 +155,7 @@ Command* SmallShell::CreateCommand(const char* cmd_line, bool* run_on_background
         {"netinfo", new NetInfoCommand(cmd_line)}
     };
 
-    
     Command* res = nullptr;
-
     
     if (checkIORedirection(cmd_line)){                      // check for io redirection or pipe usage
         res = new RedirectionCommand(cmd_line);
@@ -169,10 +167,12 @@ Command* SmallShell::CreateCommand(const char* cmd_line, bool* run_on_background
     }
     else if (builtin_cmds.find(firstWord) != builtin_cmds.end()){   // check if built-in command
         res = builtin_cmds[firstWord];
+        builtin_cmds[firstWord] = nullptr;
         *run_on_background = false;
     }
     else if (special_cmds.find(firstWord) != special_cmds.end()){   // check if special command
         res = special_cmds[firstWord];
+        special_cmds[firstWord] = nullptr;
     }
     else if (alias_table.query(firstWord).first){                   // check for aliases
         auto alias_expansion = alias_table.query(firstWord).second;
@@ -186,26 +186,40 @@ Command* SmallShell::CreateCommand(const char* cmd_line, bool* run_on_background
         res = new SimpleExternalCommand(cmd_line);
     }
 
-    // free the space allocated for args
+    // free the space allocated for args and commands
     for (int i = 0; i < count; ++i){
         free(args[i]);
     }
+    for (auto& p : builtin_cmds){
+        if (p.second == nullptr)
+            continue;
+        delete p.second;
+    }
+    for (auto& p : special_cmds){
+        if (p.second == nullptr)
+            continue;
+        delete p.second;
+    }
+    builtin_cmds.clear();
+    special_cmds.clear();
     return res;
 }
 
 void SmallShell::executeCommand(const char* cmd_line){
-    bool background = _isBackgroundComamnd(cmd_line);
+    bool background = _isBackgroundComamnd(std::string(cmd_line));
 
-    char* no_bg_sign = strdup(cmd_line);
+    std::string no_bg_sign(cmd_line);
     _removeBackgroundSign(no_bg_sign);
 
-    Command* cmd = CreateCommand(no_bg_sign, &background);
+    Command* cmd = CreateCommand(no_bg_sign.c_str(), &background);
 
     if (background){
         JobsList::getInstance().addJob(cmd, std::string(no_bg_sign));
+
     }
     else{
         cmd->execute();
+        delete cmd;
     }
     // TODO: needs to be changed and execute on processes that weren't fork.
     // Please note that you must fork smash process for some commands (e.g., external commands....)

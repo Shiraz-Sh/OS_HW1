@@ -21,11 +21,13 @@ using namespace std;
 
 void ChpromptCommand::execute() {
     this->prepare();
-    if (count >= 2) {
-        SmallShell::getInstance().setChprompt(strcat(args[1], "> "));
+    
+    if (count >= 2){
+        SmallShell::getInstance().setChprompt(std::string(args[1]) + "> ");
     } else { // no parameters are provided
         SmallShell::getInstance().setChprompt("smash> ");
     }
+
     this->cleanup();
 }
 

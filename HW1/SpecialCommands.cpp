@@ -174,6 +174,8 @@ void PipeCommand::execute() {
 
     delete[] cmd_line1;
     free(cmd_line2);
+    delete cmd1;
+    delete cmd2;
 }
 
 void RedirectionCommand::execute() {
@@ -236,6 +238,7 @@ void RedirectionCommand::execute() {
         if (close(fd) == -1){
             SYSCALL_FAIL("close");
         }
+        delete cmd;
         exit(0);
     }
     FORK_NOTIFY(pid,
@@ -286,7 +289,8 @@ void NetInfoCommand::execute(){
 
 int get_size_recursive(const std::string& path) {
     struct stat info;
-    if (stat(path.c_str(), &info) == -1) {
+    
+    if (stat(path.c_str(), &info) == -1){
         SYSCALL_FAIL("stat");
         return -1;
     }
@@ -298,10 +302,13 @@ int get_size_recursive(const std::string& path) {
     if (S_ISDIR(info.st_mode)) {
         int total_size = 0;
         auto entries = list_directory(path);
-        for (const auto& name : entries) {
-            if (name == "." || name == "..") continue;
+        total_size += info.st_size;
+        for (const auto& name : entries){
+            if (name.compare(".") == 0 || name.compare("..") == 0)
+                continue;
             int sub_size = get_size_recursive(path + "/" + name);
-            if (sub_size == -1) return -1;
+            if (sub_size == -1)
+                return -1;
             total_size += sub_size;
         }
         return total_size;

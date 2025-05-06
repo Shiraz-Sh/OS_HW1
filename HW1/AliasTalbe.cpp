@@ -14,12 +14,25 @@ const std::vector<std::string> AliasTable::forbidden = {
     "du",       "whoami",       "netinfo",
 
     // forbidden symbols for aliases
-    // "|",        "*",            ".",
-    // "&",        "/",            "\'",
-    // "="
+    "|",        "*",            ".",
+    "&",        "/",            "\'",
+    "="
+};
+
+const std::vector<std::string> AliasTable::forbidden_sym = {
+    // forbidden symbols for aliases
+    "|",        "*",            ".",
+    "&",        "/",            "\'",
+    "="
 };
 
 bool AliasTable::alias(std::string name, const char* command){
+    for (auto sym : AliasTable::forbidden_sym){
+        if (name.find(sym) != std::string::npos){
+            return false;
+        }
+    }
+
     if (query(name).first || std::find(forbidden.begin(), forbidden.end(), name) != forbidden.end()){
         std::cerr << "smash error: alias: " << name << " already exists or is a reserved command" << std::endl;
         return false;
