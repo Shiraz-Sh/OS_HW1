@@ -49,7 +49,7 @@ std::pair<bool, std::string> AliasTable::query(std::string name){
 
 std::ostream& operator<<(std::ostream& os, const AliasTable& t){
     for (const auto& name : t.aliases_order){
-        os << name << "=\"" << t.aliases.at(name) << "\"" << std::endl;
+        os << name << "=\'" << t.aliases.at(name) << "\'" << std::endl;
     }
     return os;
 }
