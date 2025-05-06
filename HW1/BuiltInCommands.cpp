@@ -166,7 +166,7 @@ void QuitCommand::execute(){
     prepare();
 
     // if optional argument kill is given
-    if (count == 2 && strcmp(args[1], "kill") == 0){
+    if (count >= 2 && strcmp(args[1], "kill") == 0){
         JobsList::getInstance().killAllJobs(false);
     }
 
