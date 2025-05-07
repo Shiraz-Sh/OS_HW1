@@ -7,6 +7,7 @@
 #include <string_view>
 #include <vector>
 #include <iostream>
+#include <time.h>
 
 #include "BuiltInCommands.hpp"
 #include "JobsList.hpp"
@@ -455,7 +456,14 @@ void WatchProcCommand::execute() {
             this->cleanup();
             return;
         }
-        sleep(1);
+        struct timespec ts;
+        ts.tv_sec = 1;
+        ts.tv_nsec = 0;
+        if (nanosleep(&ts, nullptr) == -1) {
+            SYSCALL_FAIL("nanosleep");
+            this->cleanup();
+            return;
+        }
         long p2 = get_process_cpu_time(thisPID);
         long t2 = get_total_cpu_time();
         if (p2 == -1 || t2 == -1) {
