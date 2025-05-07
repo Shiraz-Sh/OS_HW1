@@ -403,25 +403,38 @@ int get_size_recursive(const std::string& path){
 void DuCommand::execute() {
     this->prepare();
 
-    if (count > 2) {
-        std::cerr << "smash error: du: too many arguments" << std::endl;
-        this->cleanup();
+    pid_t pid = fork();
+    if (pid < 0){
+        SYSCALL_FAIL("fork");
         return;
     }
+    else if (pid == 0){
+        if (count > 2){
+            std::cerr << "smash error: du: too many arguments" << std::endl;
+            this->cleanup();
+            return;
+        }
 
-    std::string target_dir = (count == 1) ? "." : std::string(args[1]);
+        std::string target_dir = (count == 1) ? "." : std::string(args[1]);
 
-    struct stat info;
-    if (stat(target_dir.c_str(), &info) == -1 || !S_ISDIR(info.st_mode)){
-        std::cerr << "smash error: du: directory " << target_dir << " does not exist" << std::endl;
-        this->cleanup();
-        return;
+        struct stat info;
+        if (stat(target_dir.c_str(), &info) == -1 || !S_ISDIR(info.st_mode)){
+            std::cerr << "smash error: du: directory " << target_dir << " does not exist" << std::endl;
+            this->cleanup();
+            return;
+        }
+
+        int total_blocks = get_size_recursive(target_dir);
+        if (total_blocks != -1){
+            std::cout << "Total disk usage: " << (total_blocks * 512 + 1023) / 1024 << " KB" << std::endl;
+        }
+        exit(0);
     }
-
-    int total_blocks = get_size_recursive(target_dir);
-    if (total_blocks != -1) {
-        std::cout << "Total disk usage: " << (total_blocks * 512 + 1023) / 1024 << " KB" << std::endl;
-    }
+    FORK_NOTIFY(pid,
+        if (wait(nullptr) == -1){
+            SYSCALL_FAIL("wait");
+        }
+    )
 
     this->cleanup();
 }
