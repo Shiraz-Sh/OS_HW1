@@ -232,6 +232,7 @@ void PipeCommand::execute(){
 
     delete cmd1;
     delete cmd2;
+    return;
 }
 
 void RedirectionCommand::execute(){

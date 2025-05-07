@@ -62,17 +62,20 @@ std::pair<std::vector<std::string>, bool> parse_by_qoute(std::string cmd_line){
     return { pieces, true };
 }
 
-int _parseCommandLine(const std::string& cmd_line, char** args){
+int _parseCommandLine(const std::string& cmd_line, char** args, bool simple){
     FUNC_ENTRY();
-    // int i = 0;
-    // std::istringstream iss(_trim(cmd_line));
-    // for (std::string s; iss >> s;){
-    //     args[i] = (char*)malloc(s.length() + 1);
-    //     memset(args[i], 0, s.length() + 1);
-    //     strcpy(args[i], s.c_str());
-    //     args[++i] = NULL;
-    // }
-    // return i;
+    if (simple){
+        int i = 0;
+        std::istringstream iss(_trim(cmd_line));
+        for (std::string s; iss >> s;){
+            args[i] = (char*)malloc(s.length() + 1);
+            memset(args[i], 0, s.length() + 1);
+            strcpy(args[i], s.c_str());
+            args[++i] = NULL;
+        }
+        FUNC_EXIT()
+        return i;
+    }
 
     auto parsed = parse_by_qoute(cmd_line);
     

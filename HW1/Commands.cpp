@@ -9,6 +9,7 @@
 #include <iomanip>
 #include <string>
 #include <sys/stat.h>
+#include <regex>
 
 #include "Commands.hpp"
 #include "BuiltInCommands.hpp"
@@ -129,7 +130,7 @@ Command* SmallShell::CreateCommand(const std::string& cmd_line, bool* run_on_bac
     string cmd_s = _trim(cmd_line);
     string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" \n"));
     char* args[MAX_ARGS];
-    int count = _parseCommandLine(std::string(cmd_line), args); // allocate memory for args
+    int count = _parseCommandLine(std::string(cmd_line), args,  true); // allocate memory for args
 
     std::map<string, Command*> builtin_cmds = {
         {"chprompt", new ChpromptCommand(cmd_line)},
@@ -154,7 +155,18 @@ Command* SmallShell::CreateCommand(const std::string& cmd_line, bool* run_on_bac
 
     Command* res = nullptr;
 
-    if (firstWord.compare("alias") == 0){ // alias is prior for everything else!
+    std::string concat;
+    for (int i = 0; i < count; i++){
+        concat += std::string(args[i]) + " ";
+    }
+
+    std::regex pattern1(R"(^alias (\S+)='([^']*)'\s*$)");
+    std::regex pattern2(R"(^alias\s*$)");
+    std::smatch matches;
+    bool is_alias = std::regex_match(concat, matches, pattern1) || std::regex_match(concat, matches, pattern2);
+
+    // alias is prior for everything else!
+    if (is_alias){
         res = builtin_cmds[firstWord];
         builtin_cmds[firstWord] = nullptr;
         *run_on_background = false;
@@ -166,8 +178,7 @@ Command* SmallShell::CreateCommand(const std::string& cmd_line, bool* run_on_bac
     else if (checkPipe(cmd_line)){                                  // check for pipe usage
         res = new PipeCommand(cmd_line);
         *run_on_background = false;
-    }
-    else if (builtin_cmds.find(firstWord) != builtin_cmds.end()){   // check if built-in command
+    }else if (builtin_cmds.find(firstWord) != builtin_cmds.end() && firstWord.compare("alias") != 0){   // check if built-in command
         res = builtin_cmds[firstWord];
         builtin_cmds[firstWord] = nullptr;
         *run_on_background = false;

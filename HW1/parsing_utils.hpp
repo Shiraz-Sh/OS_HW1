@@ -21,7 +21,7 @@ std::string _rtrim(const std::string& s);
 
 std::string _trim(const std::string& s);
 
-int _parseCommandLine(const std::string& cmd_line, char** args);
+int _parseCommandLine(const std::string& cmd_line, char** args, bool simple = true);
 
 bool _isBackgroundComamnd(const std::string& cmd_line);
 

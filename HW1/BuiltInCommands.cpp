@@ -271,30 +271,16 @@ void AliasCommand::execute(){
     //     real_args.push_back(std::string(args[1]));
     // }
 
-    std::string arg = args[1];
-    auto eq = arg.find('=');
-    if (eq == std::string::npos){
-        std::cerr << "smash error: alias: invalid alias format" << std::endl;
-        return;
+    std::string concat(args[0]);
+    for (int i = 1; i < count; i++){
+        concat += " " + std::string(args[i]);
     }
-    std::string fixed;
-    for (size_t i = 0; i < eq; i++){
-        fixed += arg[i];
-    }
-    fixed += "=\'";
-    for (size_t i = eq + 1; i < arg.size(); i++){
-        fixed += arg[i];
-    }
-    fixed += '\'';
-
-    if (count != 2){
-
-    }
-
+    std::cout << concat << std::endl;
+    
     // Check if input is valid
-    std::regex pattern(R"(^([a-zA-Z0-9_]+)='([^']*)'$)");
+    std::regex pattern(R"(^alias ([a-zA-Z0-9_]+)='([^']*)'$)");
     std::smatch matches;
-    if (!std::regex_match(fixed, matches, pattern)){
+    if (!std::regex_match(concat, matches, pattern)){
         std::cerr << "smash error: alias: invalid alias format" << std::endl;
         return;
     }
@@ -444,54 +430,62 @@ void WatchProcCommand::execute() {
         return;
     }
 
-    pid_t thisPID = std::stoi(args[1]);
-    if (kill(thisPID, 0) == 0) { // check if process exist and accesible
-        double memUsage;
-        if (!get_mem_usage_MB(thisPID, memUsage)) {
-            this->cleanup();
-            return;
-        }
-        long p1 = get_process_cpu_time(thisPID);
-        long t1 = get_total_cpu_time();
-        if (p1 == -1 || t1 == -1) {
-            this->cleanup();
-            return;
-        }
-        struct timespec ts;
-        ts.tv_sec = 1;
-        ts.tv_nsec = 0;
-        if (nanosleep(&ts, nullptr) == -1) {
-            SYSCALL_FAIL("nanosleep");
-            this->cleanup();
-            return;
-        }
-        long p2 = get_process_cpu_time(thisPID);
-        long t2 = get_total_cpu_time();
-        if (p2 == -1 || t2 == -1) {
-            this->cleanup();
-            return;
-        }
-
-        std::cerr << "Δp: " << (p2 - p1) << ", Δt: " << (t2 - t1) << std::endl;
-        //long ticks_per_sec = sysconf(_SC_CLK_TCK);
-//        long num_cpus = sysconf(_SC_NPROCESSORS_ONLN);
-        double cpuUsage = 100.0 * ((double)(p2 - p1) / (t2 - t1));
-
-        std::cout << std::fixed << std::setprecision(1);
-        std::cout << "PID: " << args[1]
-                  << " | CPU Usage: " << cpuUsage << "%"
-                  << " | Memory Usage: " << memUsage << " MB " << std::endl;
-    } else if (errno == ESRCH || errno == EPERM) {
-        std::cerr << "smash error: watchproc: pid " << thisPID << " does not exist" << std::endl;
+    pid_t pid = fork();
+    if (pid < 0){
+        SYSCALL_FAIL("fork");
+        return;
     }
-    else{
-        SYSCALL_FAIL("kill");
+    else if (pid == 0){
+        pid_t thisPID = std::stoi(args[1]);
+        if (kill(thisPID, 0) == 0){ // check if process exist and accesible
+            double memUsage;
+            if (!get_mem_usage_MB(thisPID, memUsage)){
+                this->cleanup();
+                return;
+            }
+            long p1 = get_process_cpu_time(thisPID);
+            long t1 = get_total_cpu_time();
+            if (p1 == -1 || t1 == -1){
+                this->cleanup();
+                return;
+            }
+            struct timespec ts;
+            ts.tv_sec = 1;
+            ts.tv_nsec = 0;
+            if (nanosleep(&ts, nullptr) == -1){
+                SYSCALL_FAIL("nanosleep");
+                this->cleanup();
+                return;
+            }
+            long p2 = get_process_cpu_time(thisPID);
+            long t2 = get_total_cpu_time();
+            if (p2 == -1 || t2 == -1){
+                this->cleanup();
+                return;
+            }
+
+            std::cerr << "Δp: " << (p2 - p1) << ", Δt: " << (t2 - t1) << std::endl;
+            //long ticks_per_sec = sysconf(_SC_CLK_TCK);
+    //        long num_cpus = sysconf(_SC_NPROCESSORS_ONLN);
+            double cpuUsage = 100.0 * ((double)(p2 - p1) / (t2 - t1));
+
+            std::cout << std::fixed << std::setprecision(1);
+            std::cout << "PID: " << args[1]
+                << " | CPU Usage: " << cpuUsage << "%"
+                << " | Memory Usage: " << memUsage << " MB " << std::endl;
+        }
+        else if (errno == ESRCH || errno == EPERM){
+            std::cerr << "smash error: watchproc: pid " << thisPID << " does not exist" << std::endl;
+        }
+        else{
+            SYSCALL_FAIL("kill");
+        }
+        exit(0);
     }
+    FORK_NOTIFY(pid, if (wait(nullptr) == 0){ SYSCALL_FAIL("wait"); });
 
     this->cleanup();
 }
-
-
 
 void UnSetEnvCommand::execute(){
     prepare();
