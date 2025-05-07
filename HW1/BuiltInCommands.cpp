@@ -125,7 +125,7 @@ bool isNumber(const char* s) {
 
 void FgCommand::execute() {
     this->prepare();
-    if (count > 2 ||!isNumber(args[1])) {  // If more than one argument was provided / the format of the arguments isn't correct
+    if (count > 2 || (!isNumber(args[1]) && count == 2)) {  // If more than one argument was provided / the format of the arguments isn't correct
         std::cerr << "smash error: fg: invalid arguments" << std::endl;
         this->cleanup();
         return;
@@ -205,7 +205,7 @@ void KillCommand::execute() {
     pid_t jobPID = job->getJobPid();
     int res = kill(jobPID, signum);
     std::cout << "signal number " << signum << " was sent to pid " << jobPID << std::endl;
-    if (res != 0) {  // sucsses
+    if (res != 0) {
         SYSCALL_FAIL("kill");
     }
     this->cleanup();
@@ -405,16 +405,17 @@ long WatchProcCommand::get_total_cpu_time() {
     buffer[sizeRead] = '\0';
 
     long total = 0;
-    char label[5];   // to read the first word "cpu"
-    long val;  // to store each number temporarily
+    char label[5];
+    long val;
     char* ptr = buffer;
-    sscanf(ptr, "%s", label); // skip "cpu" and store in label - we know cpu is at first because the file starts with the CPU line
-    ptr = strchr(ptr, ' ') + 1; // move pointer to first number after cpu
+    sscanf(ptr, "%s", label);
+    ptr = strchr(ptr, ' ') + 1;
+
     // adds each number to total
     while (sscanf(ptr, "%ld", &val) == 1) {
         total += val;
         ptr = strchr(ptr, ' ');
-        if (!ptr) break;  // if no more spaces, stop
+        if (!ptr) break;
         ++ptr;
     }
 
@@ -468,8 +469,7 @@ void WatchProcCommand::execute() {
                 this->cleanup();
                 return;
             }
-
-            std::cerr << "Δp: " << (p2 - p1) << ", Δt: " << (t2 - t1) << std::endl;
+            
             //long ticks_per_sec = sysconf(_SC_CLK_TCK);
     //        long num_cpus = sysconf(_SC_NPROCESSORS_ONLN);
             double cpuUsage = 100.0 * ((double)(p2 - p1) / (t2 - t1));
@@ -489,7 +489,7 @@ void WatchProcCommand::execute() {
         }
         exit(0);
     }
-    FORK_NOTIFY(pid, if (wait(nullptr) == 0){ SYSCALL_FAIL("wait"); });
+    FORK_NOTIFY(pid, if (waitpid(pid, nullptr, 0) == 0){ SYSCALL_FAIL("wait"); });
 
     this->cleanup();
 }

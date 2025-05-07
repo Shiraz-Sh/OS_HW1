@@ -83,8 +83,8 @@ void complexExternalCommand::execute() {
     }
     else{
         FORK_NOTIFY(pid, 
-        if (wait(nullptr) == -1)
-            SYSCALL_FAIL("wait");
+        if (waitpid(pid, nullptr, 0) == -1)
+            SYSCALL_FAIL("waitpid");
         )
     }
 
@@ -276,8 +276,8 @@ void SimpleExternalCommand::execute(){
     }
 
     FORK_NOTIFY(pid,
-        if (wait(nullptr) == -1)
-            SYSCALL_FAIL("wait");
+        if (waitpid(pid, nullptr, 0) == -1)
+            SYSCALL_FAIL("waitpid");
     )
     cleanup();
 }

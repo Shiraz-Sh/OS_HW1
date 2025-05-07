@@ -9,7 +9,6 @@ class JobsList {
 public:
     class JobEntry{
     private:
-        // TODO: Add your data members
         pid_t pid;
         int job_id;  // job_id will start from 1 and increase each time we add a job
         std::string cmd;
@@ -47,7 +46,6 @@ public:
         return instance;
     }
 
-    // TODO: I assumed that addJob fork the process itself
     /**
      * Runs the command in the background and add it to the jobs list
      * @param cmd pointer to the command
@@ -79,19 +77,6 @@ public:
      */
     JobEntry* getJobById(int jobId);
 
-    /**
-     * Remove a jobs by its job ID
-     */
-    // void removeJobById(int jobId);
-
-    /**
-     * 
-     */
-    // JobEntry* getLastJob(int* lastJobId);
-
-    // JobEntry *getLastStoppedJob(int *jobId); 
-
-    // TODO: Add extra methods or modify exisitng ones as needed
     /**
      * @return true if jobs list is empty
      */

@@ -432,8 +432,8 @@ void DuCommand::execute() {
         exit(0);
     }
     FORK_NOTIFY(pid,
-        if (wait(nullptr) == -1){
-            SYSCALL_FAIL("wait");
+        if (waitpid(pid, nullptr, 0) == -1){
+            SYSCALL_FAIL("waitpid");
         }
     )
 
