@@ -275,7 +275,6 @@ void AliasCommand::execute(){
     for (int i = 1; i < count; i++){
         concat += " " + std::string(args[i]);
     }
-    std::cout << concat << std::endl;
     
     // Check if input is valid
     std::regex pattern(R"(^alias ([a-zA-Z0-9_]+)='([^']*)'$)");
@@ -437,7 +436,13 @@ void WatchProcCommand::execute() {
     }
     else if (pid == 0){
         pid_t thisPID = std::stoi(args[1]);
-        if (kill(thisPID, 0) == 0){ // check if process exist and accesible
+        if (thisPID <= 0){
+            std::cerr << "smash error: watchproc: pid " << thisPID << " does not exist" << std::endl;
+            this->cleanup();
+            return;
+        }
+        int res = kill(thisPID, 0);
+        if (res == 0){ // check if process exist and accesible
             double memUsage;
             if (!get_mem_usage_MB(thisPID, memUsage)){
                 this->cleanup();
@@ -474,11 +479,13 @@ void WatchProcCommand::execute() {
                 << " | CPU Usage: " << cpuUsage << "%"
                 << " | Memory Usage: " << memUsage << " MB " << std::endl;
         }
-        else if (errno == ESRCH || errno == EPERM){
-            std::cerr << "smash error: watchproc: pid " << thisPID << " does not exist" << std::endl;
-        }
         else{
-            SYSCALL_FAIL("kill");
+            if (errno == ESRCH || errno == EPERM){
+                std::cerr << "smash error: watchproc: pid " << thisPID << " does not exist" << std::endl;
+            }
+            else{
+                SYSCALL_FAIL("kill");
+            }
         }
         exit(0);
     }
