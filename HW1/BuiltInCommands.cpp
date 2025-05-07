@@ -367,9 +367,9 @@ bool WatchProcCommand::get_mem_usage_MB(pid_t pid, double& mem) {
 long WatchProcCommand::get_process_cpu_time(pid_t pid) {
     std::string path = "/proc/" + std::to_string(pid) + "/stat";
     int fd = open(path.c_str(), O_RDONLY);
-    if (fd == -1){
+    if (fd == -1) {
         SYSCALL_FAIL("open");
-        return false;
+        return -1;
     }
 
     char buffer[4096];
@@ -378,25 +378,26 @@ long WatchProcCommand::get_process_cpu_time(pid_t pid) {
         SYSCALL_FAIL("close");
         return -1;
     }
-    if (sizeRead <= 0){
+    if (sizeRead <= 0) {
         SYSCALL_FAIL("read");
         return -1;
     }
     buffer[sizeRead] = '\0';
 
-    char* ptr = buffer;
-    int field = 0;
-    long utime = 0, stime = 0;
-    while (field < 15) {
-        while (*ptr == ' ') ++ptr;
-        // strol - convert a C-style string (const char*) to a long integer.
-        if (field == 13) utime = strtol(ptr, &ptr, 10);
-        else if (field == 14) stime = strtol(ptr, &ptr, 10);
-        else strtol(ptr, &ptr, 10); // skip other fields
-        ++field;
-    }
+    // Skip until after the last ')'
+    char* end_paren = strchr(buffer, ')');
+    if (!end_paren) return -1;
 
-    return utime + stime; // in clock ticks
+    char* data = end_paren + 1;
+
+    // Skip first 11 fields after the process name — we're interested in fields 14 (utime) and 15 (stime)
+    long utime, stime;
+    int matched = sscanf(data,
+                         " %*s %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %ld %ld",
+                         &utime, &stime);
+
+    if (matched != 2) return -1;
+    return utime + stime;
 }
 
 long WatchProcCommand::get_total_cpu_time() {
@@ -471,7 +472,10 @@ void WatchProcCommand::execute() {
             return;
         }
 
-        double cpuUsage = 100.0 * ((double)(p2 - p1) / (double)(t2 - t1));
+        std::cerr << "Δp: " << (p2 - p1) << ", Δt: " << (t2 - t1) << std::endl;
+        //long ticks_per_sec = sysconf(_SC_CLK_TCK);
+//        long num_cpus = sysconf(_SC_NPROCESSORS_ONLN);
+        double cpuUsage = 100.0 * ((double)(p2 - p1) / (t2 - t1));
 
         std::cout << std::fixed << std::setprecision(1);
         std::cout << "PID: " << args[1]
@@ -486,6 +490,8 @@ void WatchProcCommand::execute() {
 
     this->cleanup();
 }
+
+
 
 void UnSetEnvCommand::execute(){
     prepare();
