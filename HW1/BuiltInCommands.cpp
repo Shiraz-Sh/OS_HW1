@@ -140,6 +140,8 @@ void FgCommand::execute() {
             return;
         }
         // brings the givenJobID to foreground
+        auto job = smash.jobs_list.getJobById(givenGobID);
+        std::cout << job->getCommand() << " " << job->getJobPid() << std::endl;
         bringJobToForeground(givenGobID);
     } else { // If no other argument was given
         if (smash.jobs_list.isJobsListEmpty()) {
@@ -148,6 +150,9 @@ void FgCommand::execute() {
             return;
         }
         // brings the job with the maximal job id in the jobs list to foregrund
+        int gobID = smash.jobs_list.getMaxJobID();
+        auto job = smash.jobs_list.getJobById(gobID);
+        std::cout << job->getCommand() << " " << job->getJobPid() << std::endl;
         bringJobToForeground(smash.jobs_list.getMaxJobID());
     }
     this->cleanup();
@@ -169,7 +174,7 @@ void QuitCommand::execute(){
     prepare();
 
     // if optional argument kill is given
-    if (count >= 2 && strcmp(args[1], "kill") == 0){
+    if (count >= 1 && strcmp(args[1], "kill") == 0){
         JobsList::getInstance().killAllJobs(false);
     }
 
@@ -204,9 +209,10 @@ void KillCommand::execute() {
     int signum = std::stoi(std::string(signumChar));
     pid_t jobPID = job->getJobPid();
     int res = kill(jobPID, signum);
-    std::cout << "signal number " << signum << " was sent to pid " << jobPID << std::endl;
-    if (res != 0) {
+    if (res == -1) {
         SYSCALL_FAIL("kill");
+    } else {
+        std::cout << "signal number " << signum << " was sent to pid " << jobPID << std::endl;
     }
     this->cleanup();
 }
