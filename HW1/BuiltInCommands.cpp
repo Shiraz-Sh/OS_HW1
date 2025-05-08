@@ -209,10 +209,9 @@ void KillCommand::execute() {
     int signum = std::stoi(std::string(signumChar));
     pid_t jobPID = job->getJobPid();
     int res = kill(jobPID, signum);
-    if (res == -1) {
+    std::cout << "signal number " << signum << " was sent to pid " << jobPID << std::endl;
+    if (res != 0) {
         SYSCALL_FAIL("kill");
-    } else {
-        std::cout << "signal number " << signum << " was sent to pid " << jobPID << std::endl;
     }
     this->cleanup();
 }
