@@ -26,3 +26,5 @@ int _parseCommandLine(const std::string& cmd_line, char** args, bool simple = tr
 bool _isBackgroundComamnd(const std::string& cmd_line);
 
 void _removeBackgroundSign(std::string& cmd_line);
+
+bool is_spaces_only(const std::string& str);

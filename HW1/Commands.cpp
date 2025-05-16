@@ -220,6 +220,9 @@ Command* SmallShell::CreateCommand(const std::string& cmd_line, bool* run_on_bac
 
 void SmallShell::executeCommand(const char* raw_cmd_line){
     std::string cmd_line(raw_cmd_line);
+    if (cmd_line.empty() || is_spaces_only(cmd_line)){
+        return;
+    }
     bool background = _isBackgroundComamnd(cmd_line);
 
     std::string no_bg_sign(cmd_line);

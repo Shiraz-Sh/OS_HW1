@@ -174,7 +174,7 @@ void QuitCommand::execute(){
     prepare();
 
     // if optional argument kill is given
-    if (count >= 1 && strcmp(args[1], "kill") == 0){
+    if (count >= 2 && strcmp(args[1], "kill") == 0){
         JobsList::getInstance().killAllJobs(false);
     }
 
@@ -209,8 +209,12 @@ void KillCommand::execute() {
     int signum = std::stoi(std::string(signumChar));
     pid_t jobPID = job->getJobPid();
     int res = kill(jobPID, signum);
-    std::cout << "signal number " << signum << " was sent to pid " << jobPID << std::endl;
-    if (res != 0) {
+
+    bool valid_signum = signum <= 31 && signum >= 1;
+    if (valid_signum){
+        std::cout << "signal number " << signum << " was sent to pid " << jobPID << std::endl;
+    }
+    if (!valid_signum || res != 0){
         SYSCALL_FAIL("kill");
     }
     this->cleanup();

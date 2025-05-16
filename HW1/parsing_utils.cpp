@@ -1,5 +1,6 @@
 #include <sstream>
 #include <string.h>
+#include <string>
 #include <vector>
 #include <utility>
 
@@ -153,4 +154,8 @@ void _removeBackgroundSign(std::string& cmd_line){
     cmd_line[idx] = ' ';
     // truncate the command line string up to the last non-space character
     cmd_line[cmd_line.find_last_not_of(WHITESPACE, idx) + 1] = 0;
+}
+
+bool is_spaces_only(const std::string& str){
+    return str.find_first_not_of(WHITESPACE) == std::string::npos;
 }
