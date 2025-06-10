@@ -321,7 +321,7 @@ void NetInfoCommand::execute(){
         return;
     }
     if (!interface_exists(std::string(args[1]))){
-        std::cerr << "smash error: netinfo: interface " <<  args[1] << " does not exist " << std::endl;
+        std::cerr << "smash error: netinfo: interface " <<  args[1] << " does not exist" << std::endl;
         return;
     }
     std::string ip = get_ip(args[1]);

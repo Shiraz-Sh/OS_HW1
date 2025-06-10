@@ -87,5 +87,7 @@
         "variant": "cpp",
         "socket": "cpp",
         "executor": "cpp"
-    }
+    },
+    "editor.fontSize": 18,
+    "editor.fontWeight": "bold"
 }
