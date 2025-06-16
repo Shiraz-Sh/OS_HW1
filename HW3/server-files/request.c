@@ -195,7 +195,9 @@ void requestHandle(int fd, struct timeval arrival, struct timeval dispatch, thre
     struct stat sbuf;
     char buf[MAXLINE], method[MAXLINE], uri[MAXLINE], version[MAXLINE];
     char filename[MAXLINE], cgiargs[MAXLINE];
-    rio_t rio;
+	rio_t rio;
+
+	t_stats->total_req += 1;
 
     Rio_readinitb(&rio, fd);
     Rio_readlineb(&rio, buf, MAXLINE);
@@ -218,8 +220,9 @@ void requestHandle(int fd, struct timeval arrival, struct timeval dispatch, thre
                              "OS-HW3 Server could not read this file",
                              arrival, dispatch, t_stats);
                 return;
-            }
+			}
 
+			t_stats->stat_req += 1;
             requestServeStatic(fd, filename, sbuf.st_size, arrival, dispatch, t_stats);
 
         } else {
@@ -230,13 +233,15 @@ void requestHandle(int fd, struct timeval arrival, struct timeval dispatch, thre
                 return;
             }
 
-            requestServeDynamic(fd, filename, cgiargs, arrival, dispatch, t_stats);
-        }
-
-        // TODO: add log entry using add_to_log(server_log log, const char* data, int data_len);
-
-    } else if (!strcasecmp(method, "POST")) {
-        requestServePost(fd, arrival, dispatch, t_stats, log);
+			t_stats->dynm_req += 1;
+			requestServeDynamic(fd, filename, cgiargs, arrival, dispatch, t_stats);
+		}
+		// TODO: add log entry using add_to_log(server_log log, const char* data, int data_len);
+		add_to_log(log, (const char*)buf, strlen(buf));
+	}
+	else if (!strcasecmp(method, "POST")){
+		t_stats->post_req += 1;
+		requestServePost(fd, arrival, dispatch, t_stats, log);
 
     } else {
         requestError(fd, method, "501", "Not Implemented",

@@ -4,7 +4,6 @@
 #include "log.h"
 
 typedef struct Threads_stats {
-    int id;           // Thread ID
     int stat_req;     // Number of static requests handled
     int dynm_req;     // Number of dynamic requests handled
     int post_req;     // Number of POST requests handled

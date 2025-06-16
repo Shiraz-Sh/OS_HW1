@@ -86,7 +86,9 @@
         "valarray": "cpp",
         "variant": "cpp",
         "socket": "cpp",
-        "executor": "cpp"
+        "executor": "cpp",
+        "fifo_queue.h": "c",
+        "segel.h": "c"
     },
     "editor.fontSize": 18,
     "editor.fontWeight": "bold"
