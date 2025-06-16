@@ -1,8 +1,13 @@
 #include "segel.h"
+#include "fifo_queue.h"
 #include "request.h"
 #include "log.h"
 
-#include "fifo_queue.h"
+#include <stdio.h>
+
+#define DEBUG_PRINT(fmt, ...) \
+    fprintf(stderr, "[DEBUG] %s:%d:%s(): " fmt "\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+
 
 //
 // server.c: A very, very simple web server
@@ -28,7 +33,7 @@ void getargs(int *port, int *threads_size, int *queue_size, int argc, char *argv
 
     // check if sizes are positive
     if (*threads_size <= 0 || *queue_size <= 0) {
-        fprintf(stderr, "args must be positive\n", argv[0]);
+        fprintf(stderr, "args must be positive\n");
         exit(1);
     }
 }
@@ -74,6 +79,7 @@ void* thread_functon(void* arg) {
         if (before_removing_count == args->queue->max_size) {
             pthread_cond_signal(args->requests_add_allowed);
         }
+        
         pthread_mutex_unlock(args->requests_lock);
 
         // Call the request handler (immediate in main thread — DEMO ONLY)
@@ -82,6 +88,8 @@ void* thread_functon(void* arg) {
 
         Close(request.connfd);  // Close the connection
     }
+
+    free(args);
 }
 
 
@@ -90,7 +98,7 @@ int main(int argc, char *argv[])
     // Create the global server log
     server_log log = create_log();
 
-    int listenfd, connfd, port, clientlen, threads_size, queue_size, total_requests;
+    int listenfd, connfd, port, clientlen, threads_size, queue_size;
     struct sockaddr_in clientaddr;
     pthread_cond_t requests_remove_allowed;
     pthread_cond_t requests_add_allowed;
@@ -110,14 +118,13 @@ int main(int argc, char *argv[])
 
     // arguments the thread will use
     for (unsigned int i = 0; i < threads_size; i++){
-        thread_args_struct thread_args = {
-            .queue = &queue,
-            .requests_lock = &requests_lock,
-            .requests_remove_allowed = &requests_remove_allowed,
-            .requests_add_allowed = &requests_add_allowed,
-            .thread_id = i
-        };
-        pthread_create(&threads[i], NULL, thread_functon, &thread_args);
+        thread_args_struct* thread_args = (thread_args_struct*)malloc(sizeof(thread_args_struct));
+        thread_args->queue = &queue;
+        thread_args->requests_lock = &requests_lock;
+        thread_args->requests_remove_allowed = &requests_remove_allowed;
+        thread_args->requests_add_allowed = &requests_add_allowed;
+        thread_args->thread_id = i;
+        pthread_create(&threads[i], NULL, thread_functon, thread_args);
     }
 
     listenfd = Open_listenfd(port);

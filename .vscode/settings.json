@@ -88,7 +88,10 @@
         "socket": "cpp",
         "executor": "cpp",
         "fifo_queue.h": "c",
-        "segel.h": "c"
+        "segel.h": "c",
+        "rw_lock.h": "c",
+        "request.h": "c",
+        "log.h": "c"
     },
     "editor.fontSize": 18,
     "editor.fontWeight": "bold"

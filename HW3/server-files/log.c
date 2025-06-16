@@ -2,19 +2,12 @@
 #include <string.h>
 
 #include "log.h"
-#include "request.h"
+// #include "request.h"
 #include "segel.h"
 #include "rw_lock.h"
 
 
 // Opaque struct definition
-
-struct Server_Log{
-    // TODO: Implement internal log storage (e.g., dynamic buffer, linked list, etc.)
-    struct Server_Log* next;
-    char* data;
-    int data_len;
-};
 
 
 /**
@@ -90,7 +83,7 @@ void add_to_log(server_log log, const char* data, int data_len) {
     writer_lock();
 
     if (log->next == NULL){
-        log->next = (server_log)malloc(sizeof(struct Sever_Log));
+        log->next = (server_log)malloc(sizeof(struct Server_Log));
     }
     // if malloc failed
     if (log->next == NULL){
@@ -101,7 +94,7 @@ void add_to_log(server_log log, const char* data, int data_len) {
     while (temp->next != NULL){
         temp = temp->next;
     }
-    temp->next = (server_log)malloc(sizeof(struct Sever_Log));
+    temp->next = (server_log)malloc(sizeof(struct Server_Log));
     if (temp->next != NULL){
         temp->next->data = (char*)malloc(data_len);
         if (temp->next->data != NULL){
