@@ -3,11 +3,17 @@
 # To remove files, type "make clean"
 #
 
-OBJS = server.o request.o segel.o client.o log.o
+OBJS = server.o request.o segel.o client.o log.o rw_lock.o fifo_queue.o
 TARGET = server
 
 CC = gcc
 CFLAGS = -g -Wall
+
+DEBUG ?= 1
+
+ifeq ($(DEBUG), 1)
+    CFLAGS += -DDEBUG
+endif
 
 LIBS = -lpthread
 
