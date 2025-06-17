@@ -1,4 +1,5 @@
 #include "segel.h"
+#include "utils.h"
 
 int readers_inside, writers_inside, writers_waiting;
 pthread_cond_t read_allowed, write_allowed;
@@ -32,8 +33,9 @@ void reader_unlock(){
 void writer_lock(){
     pthread_mutex_lock(&global_lock);
     writers_waiting++;
-    while (writers_waiting + readers_inside > 0)
+    while (writers_inside + readers_inside > 0)
         pthread_cond_wait(&write_allowed, &global_lock);
+
     writers_waiting--;
     writers_inside++;
     pthread_mutex_unlock(&global_lock);

@@ -1,6 +1,8 @@
 #ifndef SERVER_LOG_H
 #define SERVER_LOG_H
 
+#include <stdbool.h>
+
 // TODO:
 // Implement a thread-safe server log system.
 // - The log should support concurrent access from multiple threads.
@@ -11,10 +13,15 @@
 // - The log should allow appending entries and returning the full log content.
 
 // Log entry
-typedef struct Server_Log{
-    struct Server_Log* next;
+typedef struct Log_Entry{
+    struct Log_Entry* next;
     char* data;
     int data_len;
+    bool empty;
+}*log_entry;
+
+typedef struct Server_Log{
+    log_entry head;
 }*server_log;
 
 // typedef struct Server_Log* server_log;

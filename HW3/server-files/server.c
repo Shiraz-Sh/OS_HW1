@@ -23,6 +23,7 @@ void getargs(int *port, int *threads_size, int *queue_size, int argc, char *argv
         fprintf(stderr, "Usage: %s [portnum] [threads] [queue_size]\n", argv[0]);
         exit(1);
     }
+    // TODO: check these are numbers
     *port = atoi(argv[1]);
     *threads_size = atoi(argv[2]);
     *queue_size = atoi(argv[3]);
@@ -119,7 +120,7 @@ int main(int argc, char *argv[])
         thread_args->requests_lock = &requests_lock;
         thread_args->requests_remove_allowed = &requests_remove_allowed;
         thread_args->requests_add_allowed = &requests_add_allowed;
-        thread_args->thread_id = i;
+        thread_args->thread_id = i + 1;
         pthread_create(&threads[i], NULL, thread_functon, thread_args);
     }
 

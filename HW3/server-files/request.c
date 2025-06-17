@@ -144,7 +144,6 @@ void requestServeDynamic(int fd, char *filename, char *cgiargs, struct timeval a
   	WaitPid(pid, NULL, WUNTRACED);
 }
 
-
 void requestServeStatic(int fd, char *filename, int filesize, struct timeval arrival, struct timeval dispatch, threads_stats t_stats)
 {
 	int srcfd;
@@ -237,7 +236,9 @@ void requestHandle(int fd, struct timeval arrival, struct timeval dispatch, thre
 			requestServeDynamic(fd, filename, cgiargs, arrival, dispatch, t_stats);
 		}
 		// TODO: add log entry using add_to_log(server_log log, const char* data, int data_len);
-		add_to_log(log, (const char*)buf, strlen(buf));
+		char stat_buf[MAXLINE];
+		int stat_size = append_stats(stat_buf, t_stats, arrival, dispatch);
+		add_to_log(log, (const char*)stat_buf, stat_size);
 	}
 	else if (!strcasecmp(method, "POST")){
 		t_stats->post_req += 1;

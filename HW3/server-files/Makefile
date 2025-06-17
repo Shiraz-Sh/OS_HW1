@@ -9,7 +9,7 @@ TARGET = server
 CC = gcc
 CFLAGS = -g -Wall
 
-DEBUG ?= 1
+DEBUG ?= 0
 
 ifeq ($(DEBUG), 1)
     CFLAGS += -DDEBUG

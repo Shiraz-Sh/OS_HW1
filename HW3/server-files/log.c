@@ -5,7 +5,7 @@
 // #include "request.h"
 #include "segel.h"
 #include "rw_lock.h"
-
+#include "utils.h"
 
 // Opaque struct definition
 
@@ -17,8 +17,10 @@
 server_log create_log(){
     readers_writers_init();
     server_log log = (server_log)malloc(sizeof(struct Server_Log));
-    if (log != NULL)
-        log->next = NULL;
+
+    log->head = (log_entry)malloc(sizeof(struct Log_Entry));
+    log->head->next = NULL;
+    log->head->empty = true;
     return log;
 }
 
@@ -29,11 +31,13 @@ server_log create_log(){
 void destroy_log(server_log log){
     reader_writer_destroy();
 
-    server_log temp = log->next;
-    server_log next = NULL;
+    log_entry temp = log->head;
+    log_entry next = NULL;
     while (temp != NULL){
         next = temp->next;
-        free(temp->data);
+        if (!temp->empty){
+            free(temp->data);
+        }
         free(temp);
         temp = next;
     }
@@ -49,27 +53,37 @@ void destroy_log(server_log log){
  */
 int get_log(server_log log, char** dst){
     reader_lock();
+    DEBUG_PRINT("got reader lock");
 
+    DEBUG_PRINT("log null ? (%d)", log == NULL);
     int total_log_len = 0;
-    server_log temp = log->next;
-    server_log next = NULL;
+    log_entry temp = log->head;
 
     while (temp != NULL){
-        next = temp->next;
         total_log_len += temp->data_len;
-        temp = next;
+        temp = temp->next;
     }
+
+    DEBUG_PRINT("log size =  %d", total_log_len);
 
     *dst = (char*)malloc(total_log_len + 1);
     if (*dst != NULL){
-        temp = log->next;
-        while (temp != NULL){
+        DEBUG_PRINT("malloc successfull");
+
+        temp = log->head;
+        while (temp != NULL && !temp->empty){
+            DEBUG_PRINT("read log");
             strcat(*dst, temp->data);
+            DEBUG_PRINT("strcat success");
+            temp = temp->next;
         }
+    }
+    else{
+        DEBUG_PRINT("malloc failed");
     }
 
     reader_unlock();
-
+    DEBUG_PRINT("got log");
     return total_log_len;
 }
 
@@ -79,30 +93,30 @@ int get_log(server_log log, char** dst){
  *  @param data the data to add in a new entry
  *  @param data_len the length of the new data
  */
-void add_to_log(server_log log, const char* data, int data_len) {
+void add_to_log(server_log log, const char* data, int data_len){
+    DEBUG_PRINT("try writer lock");
     writer_lock();
+    DEBUG_PRINT("got writer lock");
 
-    if (log->next == NULL){
-        log->next = (server_log)malloc(sizeof(struct Server_Log));
-    }
-    // if malloc failed
-    if (log->next == NULL){
-        writer_unlock();
-        return;
-    }
-    server_log temp = log->next;
+    log_entry temp = log->head;
     while (temp->next != NULL){
         temp = temp->next;
     }
-    temp->next = (server_log)malloc(sizeof(struct Server_Log));
-    if (temp->next != NULL){
-        temp->next->data = (char*)malloc(data_len);
-        if (temp->next->data != NULL){
-            strcpy(temp->next->data, data);
-        }
-        temp->next->data_len = data_len;
-        temp->next->next = NULL;
+
+    // instantiate an empty cell at the end
+    temp->next = (log_entry)malloc(sizeof(struct Log_Entry));
+    temp->next->next = NULL;
+    temp->next->empty = true;
+
+    temp->data = (char*)malloc(data_len + 1);
+    if (temp->data != NULL){
+        strcpy(temp->data, data);
     }
+    temp->data_len = data_len;
+    temp->empty = false;
+
+    DEBUG_PRINT("added to log");
 
     writer_unlock();
+    DEBUG_PRINT("writer unlocked");
 }
