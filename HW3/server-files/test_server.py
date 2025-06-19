@@ -254,7 +254,7 @@ class TestServer:
             )
             yield Responses(headers, params)
         finally:
-            proc.kill()
+            proc.terminate()
             proc.wait()
 
     async def _send_cgi_requests(

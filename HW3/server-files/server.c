@@ -70,12 +70,22 @@ void* thread_functon(void* arg) {
         
         Close(request.connfd);
     }
+    free(t_stats);
     free(args);
 }
 
+bool exit_loop = false;
 
-int main(int argc, char *argv[])
+void cleanup_and_exit(int signum){
+    printf("Caught signal %d, cleaning up...\n", signum);
+    exit_loop = true;
+}
+
+int main(int argc, char* argv[])
 {
+    signal(SIGTERM, cleanup_and_exit);
+    signal(SIGINT, cleanup_and_exit);
+
     // Create the global server log
     server_log log = create_log();
 
@@ -98,7 +108,11 @@ int main(int argc, char *argv[])
     }
 
     listenfd = Open_listenfd(port);
-    while (1) {
+
+    // struct timeval start, end, diff;
+    // gettimeofday(&start, NULL);
+
+    while (!exit_loop){
         // Wait for a connection
         clientlen = sizeof(clientaddr);
         connfd = Accept(listenfd, (SA *)&clientaddr, (socklen_t *) &clientlen);
@@ -114,9 +128,24 @@ int main(int argc, char *argv[])
         };
 
         fifo_enqueue(&queue, new_request);      // thread-safe enqueue
+
+        // >>>>> TODO: make sure to exit, delete this before submission!
+        // gettimeofday(&end, NULL);
+        // timeval_diff(&start, &end, &diff);
+        // if (diff.tv_sec >= 100){
+        //     break;
+        // }
+    }
+
+    // ------------------------------------------------------------------------------
+    // I am not sure if this is needed but might be useful later
+    // ------------------------------------------------------------------------------
+    // kill all threads using SIGKILL while making sure they are not in mid run using mutex
+    // pthread_mutex_lock(&requests_lock);
+    for (unsigned int i = 0; i < threads_size; i++){
+        pthread_kill(&threads[i], 9); // send SIGKILL to each thread
     }
 
     destroy_log(log);   // Clean up the server log before exiting
-
     fifo_destroy(&queue);  // free allocated place in queue and destroy locks/conds
 }
