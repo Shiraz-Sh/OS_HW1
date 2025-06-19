@@ -42,12 +42,21 @@ typedef struct{
     int thread_id;
 } thread_args_struct;
 
+bool exit_loop_thread = false;
+
+void cleanup_and_exit_thread(int signum){
+    printf("Caught signal %d, cleaning up...\n", signum);
+    exit_loop_thread = true;
+}
+
 /**
  * the function every thread will run on its own.
  * @param arg - the arguments (queue, thread_id)
  * @return
  */
-void* thread_functon(void* arg) {
+void* thread_functon(void* arg){
+    signal(SIGTERM, cleanup_and_exit_thread);
+    signal(SIGINT, cleanup_and_exit_thread);
     thread_args_struct* args = (thread_args_struct*)arg;
 
     threads_stats t_stats = (threads_stats)malloc(sizeof(struct Threads_stats));
@@ -57,7 +66,7 @@ void* thread_functon(void* arg) {
     t_stats->stat_req = 0;
     t_stats->total_req = 0;
 
-    while (1){
+    while (!exit_loop_thread){
         request_val request;
         fifo_dequeue(args->queue, &request);
 
@@ -74,17 +83,17 @@ void* thread_functon(void* arg) {
     free(args);
 }
 
-bool exit_loop = false;
+bool exit_loop_main = false;
 
-void cleanup_and_exit(int signum){
+void cleanup_and_exit_main(int signum){
     printf("Caught signal %d, cleaning up...\n", signum);
-    exit_loop = true;
+    exit_loop_main = true;
 }
 
 int main(int argc, char* argv[])
 {
-    signal(SIGTERM, cleanup_and_exit);
-    signal(SIGINT, cleanup_and_exit);
+    signal(SIGTERM, cleanup_and_exit_main);
+    signal(SIGINT, cleanup_and_exit_main);
 
     // Create the global server log
     server_log log = create_log();
@@ -112,7 +121,7 @@ int main(int argc, char* argv[])
     // struct timeval start, end, diff;
     // gettimeofday(&start, NULL);
 
-    while (!exit_loop){
+    while (!exit_loop_main){
         // Wait for a connection
         clientlen = sizeof(clientaddr);
         connfd = Accept(listenfd, (SA *)&clientaddr, (socklen_t *) &clientlen);
@@ -143,7 +152,7 @@ int main(int argc, char* argv[])
     // kill all threads using SIGKILL while making sure they are not in mid run using mutex
     // pthread_mutex_lock(&requests_lock);
     for (unsigned int i = 0; i < threads_size; i++){
-        pthread_kill(&threads[i], 9); // send SIGKILL to each thread
+        pthread_kill(threads[i], SIGTERM); // send SIGKILL to each thread
     }
 
     destroy_log(log);   // Clean up the server log before exiting
