@@ -59,7 +59,7 @@ int get_log(server_log log, char** dst){
     int total_log_len = 0;
     log_entry temp = log->head;
 
-    while (temp != NULL){
+    while (temp != NULL && !temp->empty){
         total_log_len += temp->data_len;
         temp = temp->next;
     }
@@ -68,12 +68,18 @@ int get_log(server_log log, char** dst){
 
     *dst = (char*)malloc(total_log_len + 1);
     if (*dst != NULL){
+        (*dst)[0] = '\0';
         DEBUG_PRINT("malloc successfull");
 
         temp = log->head;
         while (temp != NULL && !temp->empty){
             DEBUG_PRINT("read log");
-            strcat(*dst, temp->data);
+            if (temp->empty){
+                printf("\n\n>>>>>>> very very bad! <<<<<<<\n\n");
+            }
+            else{
+                strcat(*dst, temp->data);
+            }
             DEBUG_PRINT("strcat success");
             temp = temp->next;
         }
@@ -102,7 +108,9 @@ void add_to_log(server_log log, const char* data, int data_len){
     while (temp->next != NULL){
         temp = temp->next;
     }
+
     usleep(200000); // set this to 0.2 seconds (in microseconds)
+
     // instantiate an empty cell at the end
     temp->next = (log_entry)malloc(sizeof(struct Log_Entry));
     temp->next->next = NULL;

@@ -173,8 +173,8 @@ void requestServeStatic(int fd, char *filename, int filesize, struct timeval arr
 
 void requestServePost(int fd,  struct timeval arrival, struct timeval dispatch, threads_stats t_stats, server_log log)
 {
-    char header[MAXBUF], *body = NULL;
-    int body_len = get_log(log, &body);
+	char header[MAXBUF], * body = NULL;
+	int body_len = get_log(log, &body);
     // put together response
     sprintf(header, "HTTP/1.0 200 OK\r\n");
     sprintf(header, "%sServer: OS-HW3 Web Server\r\n", header);
@@ -236,7 +236,10 @@ void requestHandle(int fd, struct timeval arrival, struct timeval dispatch, thre
 			requestServeDynamic(fd, filename, cgiargs, arrival, dispatch, t_stats);
 		}
 		// TODO: add log entry using add_to_log(server_log log, const char* data, int data_len);
+
+		// create a null terminated buffer
 		char stat_buf[MAXLINE];
+		stat_buf[0] = '\0';
 		int stat_size = append_stats(stat_buf, t_stats, arrival, dispatch);
 		add_to_log(log, (const char*)stat_buf, stat_size);
 	}
