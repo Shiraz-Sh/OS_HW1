@@ -49,7 +49,7 @@ void destroy_log(server_log log){
  * Return the full contents of the log as a dynamically allocated string
  * @param log a pointer to the log
  * @param dst destination buffer
- * @return length of data inserted to dst 
+ * @return length of data inserted to dst
  */
 int get_log(server_log log, char** dst){
     reader_lock();
@@ -102,7 +102,7 @@ void add_to_log(server_log log, const char* data, int data_len){
     while (temp->next != NULL){
         temp = temp->next;
     }
-
+    usleep(200000); // set this to 0.2 seconds (in microseconds)
     // instantiate an empty cell at the end
     temp->next = (log_entry)malloc(sizeof(struct Log_Entry));
     temp->next->next = NULL;

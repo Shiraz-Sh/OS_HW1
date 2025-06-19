@@ -3,6 +3,7 @@
 
 #include "request.h"
 #include "segel.h"
+#include <pthread.h>
 
 typedef struct{
     server_log* log;
@@ -18,15 +19,20 @@ typedef struct{
     int tail;
     int count;
     int max_size;
+    pthread_mutex_t lock;
+    pthread_cond_t not_full;
+    pthread_cond_t not_empty;
 } fifo_queue;
 
 
 void fifo_init(fifo_queue* fifo, int size);
 
-// Add to queue (to tail)
-int fifo_enqueue(fifo_queue* fifo, int max_size, request_val value);
+void fifo_destroy(fifo_queue* fifo);
 
-// Remove from queue (from head)
-int fifo_dequeue(fifo_queue* fifo, int max_size, request_val* value);
+// Add to queue (to tail), blocks if full
+int fifo_enqueue(fifo_queue* fifo, request_val value);
+
+// Remove from queue (from head), blocks if empty
+int fifo_dequeue(fifo_queue* fifo, request_val* value);
 
 #endif

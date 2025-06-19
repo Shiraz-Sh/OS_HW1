@@ -39,15 +39,12 @@ void getargs(int *port, int *threads_size, int *queue_size, int argc, char *argv
 // arguments the thread will use
 typedef struct{
     fifo_queue *queue;
-    pthread_mutex_t *requests_lock;
-    pthread_cond_t *requests_remove_allowed;
-    pthread_cond_t* requests_add_allowed;
     int thread_id;
 } thread_args_struct;
 
 /**
  * the function every thread will run on its own.
- * @param arg - the arguments (queue, mutex and cond)
+ * @param arg - the arguments (queue, thread_id)
  * @return
  */
 void* thread_functon(void* arg) {
@@ -60,32 +57,19 @@ void* thread_functon(void* arg) {
     t_stats->stat_req = 0;
     t_stats->total_req = 0;
 
-    //TODO: when we will kill a thread?
     while (1){
-        pthread_mutex_lock(args->requests_lock);
-        
-        while (args->queue->count == 0){
-            pthread_cond_wait(args->requests_remove_allowed, args->requests_lock);
-        }
-
         request_val request;
-        int before_removing_count = args->queue->count;
-        fifo_dequeue(args->queue, args->queue->max_size, &request);
+        fifo_dequeue(args->queue, &request);
 
-        // signaling the main thread to allow more requests
-        if (before_removing_count == args->queue->max_size) {
-            pthread_cond_signal(args->requests_add_allowed);
-        }
-        
-        pthread_mutex_unlock(args->requests_lock);
+        struct timeval current, dispatch;
+        gettimeofday(&current, NULL);
+        timersub(&current, &request.arrival, &dispatch);
+        request.dispatch = dispatch;
 
-        // Call the request handler (immediate in main thread — DEMO ONLY)
-        gettimeofday(&request.dispatch, NULL);
         requestHandle(request.connfd, request.arrival, request.dispatch, t_stats, *request.log);
-
-        Close(request.connfd);  // Close the connection
+        
+        Close(request.connfd);
     }
-
     free(args);
 }
 
@@ -97,9 +81,6 @@ int main(int argc, char *argv[])
 
     int listenfd, connfd, port, clientlen, threads_size, queue_size;
     struct sockaddr_in clientaddr;
-    pthread_cond_t requests_remove_allowed;
-    pthread_cond_t requests_add_allowed;
-    pthread_mutex_t requests_lock;
 
     getargs(&port, &threads_size, &queue_size, argc, argv);
 
@@ -108,29 +89,17 @@ int main(int argc, char *argv[])
     fifo_queue queue;                   // queue of the connections
     fifo_init(&queue, queue_size);
 
-    // Initialize locks and conds
-    pthread_mutex_init(&requests_lock, NULL);
-    pthread_cond_init(&requests_remove_allowed, NULL);
-    pthread_cond_init(&requests_add_allowed, NULL);
-
     // arguments the thread will use
     for (unsigned int i = 0; i < threads_size; i++){
         thread_args_struct* thread_args = (thread_args_struct*)malloc(sizeof(thread_args_struct));
         thread_args->queue = &queue;
-        thread_args->requests_lock = &requests_lock;
-        thread_args->requests_remove_allowed = &requests_remove_allowed;
-        thread_args->requests_add_allowed = &requests_add_allowed;
         thread_args->thread_id = i + 1;
         pthread_create(&threads[i], NULL, thread_functon, thread_args);
     }
 
     listenfd = Open_listenfd(port);
     while (1) {
-        // wait if queue is full
-        while (queue.count == queue.max_size)
-            pthread_cond_wait(&requests_add_allowed , &requests_lock);
-
-        // get new request
+        // Wait for a connection
         clientlen = sizeof(clientaddr);
         connfd = Accept(listenfd, (SA *)&clientaddr, (socklen_t *) &clientlen);
 
@@ -144,31 +113,10 @@ int main(int argc, char *argv[])
             .dispatch = {0, 0}
         };
 
-        pthread_mutex_lock(&requests_lock);
-
-        fifo_enqueue(&queue, queue.max_size, new_request);      // adding to queue the new request
-        pthread_cond_signal(&requests_remove_allowed);          // signaling all working threads that a new request came
-
-        pthread_mutex_unlock(&requests_lock);
+        fifo_enqueue(&queue, new_request);      // thread-safe enqueue
     }
-
-
-    /*
-    // ------------------------------------------------------------------------------
-    // I am not sure if this is needed but might be useful later
-    // ------------------------------------------------------------------------------
-    // kill all threads using SIGKILL while making sure they are not in mid run using mutex
-    pthread_mutex_lock(&requests_lock);
-    for (unsigned int i = 0; i < threads_size; i++){
-        pthread_kill(&threads[i], 9); // send SIGKILL to each thread 
-    }
-    */
 
     destroy_log(log);   // Clean up the server log before exiting
-    free(queue.queue);  // free allocated place in queue
 
-    // destroy locks and conds
-    pthread_mutex_destroy(&requests_lock);
-    pthread_cond_destroy(&requests_remove_allowed);
-    pthread_cond_destroy(&requests_add_allowed);
+    fifo_destroy(&queue);  // free allocated place in queue and destroy locks/conds
 }
