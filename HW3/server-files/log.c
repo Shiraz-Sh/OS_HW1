@@ -59,14 +59,16 @@ int get_log(server_log log, char** dst){
     int total_log_len = 0;
     log_entry temp = log->head;
 
+    int i = 0;
     while (temp != NULL && !temp->empty){
+        i++;
         total_log_len += temp->data_len;
         temp = temp->next;
     }
 
     DEBUG_PRINT("log size =  %d", total_log_len);
 
-    *dst = (char*)malloc(total_log_len + 1);
+    *dst = (char*)malloc(total_log_len + 1 + i);
     if (*dst != NULL){
         (*dst)[0] = '\0';
         DEBUG_PRINT("malloc successfull");
@@ -80,6 +82,7 @@ int get_log(server_log log, char** dst){
             else{
                 strcat(*dst, temp->data);
             }
+            strcat(*dst, "\n");
             DEBUG_PRINT("strcat success");
             temp = temp->next;
         }
@@ -90,7 +93,7 @@ int get_log(server_log log, char** dst){
 
     reader_unlock();
     DEBUG_PRINT("got log");
-    return total_log_len;
+    return total_log_len + i;
 }
 
 /**

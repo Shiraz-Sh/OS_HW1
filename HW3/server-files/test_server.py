@@ -198,6 +198,15 @@ class ResponseParams(typing.TypedDict):
             - see all params here: https://www.python-httpx.org/api/#asyncclient (ctrl+f 'async request')
     """
 
+    warmup: list[dict]
+    """
+    Messages to send **before** batches.
+    
+    NOTE: Responses will not be returned or validated.
+
+    Can be used to help stabilize tests.
+    """
+
 
 class Responses(typing.NamedTuple):
     headers: list[ResponseStats]
@@ -225,13 +234,14 @@ class TestServer:
 
     @pytest.fixture
     def responses(self, request) -> typing.Generator[Responses, None, None]:
-        port = 8889
+        port = 8888
 
         params: ResponseParams = {
             "threads": request.param["threads"],
             "queue_size": request.param["queue_size"],
             "batches": request.param["batches"],
             "stagger": request.param.get("stagger", self.STAGGER),
+            "warmup": request.param.get("warmup", []),
         }
 
         cmd = [
@@ -249,26 +259,27 @@ class TestServer:
 
         time.sleep(0.5)
         try:
-            headers = asyncio.run(
-                self._send_cgi_requests(params["batches"], port, params["stagger"])
-            )
+            headers = asyncio.run(self._send_cgi_requests(port, params))
             yield Responses(headers, params)
         finally:
             proc.kill()
             proc.wait()
 
     async def _send_cgi_requests(
-        self, batches: list[list[dict]], port: int, stagger: float | None
+        self, port: int, params: ResponseParams
     ) -> list[ResponseStats]:
         async with httpx.AsyncClient(base_url=f"http://localhost:{port}") as session:
+            for msg in params["warmup"]:
+                await session.request(method="POST", url="")
+
             requests = []
-            for batch in batches:
+            for batch in params["batches"]:
                 for msg in batch:
                     msg["url"] = msg.get("url", "")
                     msg["timeout"] = msg.get("timeout")
                     requests.append(asyncio.create_task(session.request(**msg)))
-                    if stagger is not None:
-                        await asyncio.sleep(stagger)
+                    if params["stagger"] is not None:
+                        await asyncio.sleep(params["stagger"])
                 await asyncio.sleep(CGI_SPINFOR * 1.5)
 
             responses: list[httpx.Response] = [await r for r in requests]
@@ -283,22 +294,34 @@ class TestServer:
             dict(
                 threads=1,
                 queue_size=5,
-                batches=[repeat(dict(method="GET", url="output.cgi"), 5)],
+                batches=[
+                    [dict(method="GET")],
+                    [*repeat(dict(method="GET", url="output.cgi"), 5)],
+                ],
             ),
             dict(
                 threads=5,
                 queue_size=1,
-                batches=[repeat(dict(method="GET", url="output.cgi"), 5)],
+                batches=[
+                    [dict(method="GET")],
+                    [*repeat(dict(method="GET", url="output.cgi"), 5)],
+                ],
             ),
             dict(
                 threads=5,
                 queue_size=5,
-                batches=[repeat(dict(method="GET", url="output.cgi"), 5)],
+                batches=[
+                    [dict(method="GET")],
+                    [*repeat(dict(method="GET", url="output.cgi"), 5)],
+                ],
             ),
             dict(
                 threads=3,
                 queue_size=3,
-                batches=[repeat(dict(method="GET", url="output.cgi"), 5)],
+                batches=[
+                    [dict(method="GET")],
+                    [*repeat(dict(method="GET", url="output.cgi"), 5)],
+                ],
             ),
         ],
         indirect=["responses"],
@@ -376,8 +399,8 @@ class TestServer:
             arrival_diff = abs(self.STAGGER * i - arrivals[i])
             dispatch_diff = abs(process_time * i - dispatches[i])
 
-            assert arrival_diff < eps, f"i='{i}' arrivals: {arrivals}"
-            assert dispatch_diff < eps, f" i='{i}' dispatches: {dispatches}"
+            assert arrival_diff < eps, f"{i=} arrivals: {arrivals}"
+            assert dispatch_diff < eps, f" {i=} dispatches: {dispatches}"
 
     @pytest.mark.parametrize(
         "responses",
@@ -447,9 +470,9 @@ class TestServer:
                 queue_size=5,
                 batches=[
                     [
-                        *repeat(dict(method="GET", url="home.html"), 7),
+                        *repeat(dict(method="GET", url="home.html"), 6),
                         *repeat(dict(method="GET", url="output.cgi"), 7),
-                        *repeat(dict(method="POST"), 7),
+                        *repeat(dict(method="POST"), 5),
                     ]
                 ],
             ),
@@ -459,8 +482,8 @@ class TestServer:
                 batches=[
                     [
                         *repeat(dict(method="GET", url="home.html"), 7),
-                        *repeat(dict(method="GET", url="output.cgi"), 7),
-                        *repeat(dict(method="POST"), 7),
+                        *repeat(dict(method="GET", url="output.cgi"), 6),
+                        *repeat(dict(method="POST"), 5),
                     ]
                 ],
             ),
@@ -469,8 +492,8 @@ class TestServer:
                 queue_size=30,
                 batches=[
                     [
-                        *repeat(dict(method="GET", url="home.html"), 7),
-                        *repeat(dict(method="GET", url="output.cgi"), 7),
+                        *repeat(dict(method="GET", url="home.html"), 5),
+                        *repeat(dict(method="GET", url="output.cgi"), 6),
                         *repeat(dict(method="POST"), 7),
                     ]
                 ],
@@ -499,9 +522,7 @@ class TestServer:
             ).values()
         )
         actual_post = sum(
-            dict(
-                (r.StatThreadId, r.StatThreadDynamic) for r in responses.headers
-            ).values()
+            dict((r.StatThreadId, r.StatThreadPost) for r in responses.headers).values()
         )
 
         actual_total_count = sum(
@@ -559,10 +580,13 @@ class TestServer:
         """
         PIAZZA: https://piazza.com/class/m8nd0nnxsj77dt/post/382_f2
         PIAZZA: https://piazza.com/class/m8nd0nnxsj77dt/post/373
+        PIAZZA: https://piazza.com/class/m8nd0nnxsj77dt/post/mbqnl1buu9t7ei
 
-        If staff replies that we need option:
-            A - this test should FAIL
-            B - this test should PASS
+        To summarize, this is the expected implementation:
+            - Queue.wait
+            - Accept
+            - Arrival
+            - Queue.enqueue
         """
 
         pending_and_active = []
@@ -621,13 +645,20 @@ class TestServer:
     def test_log_serial_requests(self, responses: Responses):
         """
         PIAZZA: https://piazza.com/class/m8nd0nnxsj77dt/post/377
+        PIAZZA: https://piazza.com/class/m8nd0nnxsj77dt/post/mbqnl1buu9t7ei
 
-        Do we need to add a delimiter?
+        Do we need to add a delimiter? **Yes**.
+
+        The segel said the delimiter for the **last** log does not matter, but this
+        test checks that it **exists**, e.g. stats1\nstats2\n
+                                                           ^^ notice last delimiter
+
+        If you have issues with this, feel free to tweak the test accordingly.
         """
 
         expected_log = ""
         for response in responses.headers[:-1]:
-            expected_log += response.to_string()
+            expected_log += response.to_string() + "\n"
 
         actual_log = responses.headers[-1].response.text
 
@@ -640,6 +671,7 @@ class TestServer:
                 threads=5,
                 queue_size=5,
                 stagger=0.01,
+                warmup=[dict(method="POST")],
                 batches=[
                     [
                         dict(method="GET", url="home.html"),  # writer locks
@@ -659,15 +691,22 @@ class TestServer:
     ):
         """
         PIAZZA: https://piazza.com/class/m8nd0nnxsj77dt/post/377
+        PIAZZA: https://piazza.com/class/m8nd0nnxsj77dt/post/mbqnl1buu9t7ei
 
         Do we need to add a delimiter?
+
+        The segel said the delimiter for the **last** log does not matter, but this
+        test checks that it **exists**, e.g. stats1\nstats2\n
+                                                           ^^ notice last delimiter
+
+        If you have issues with this, feel free to tweak the test accordingly.
         """
         writer_0 = responses.headers[0]
         readers = responses.headers[1:-2]
         writer_1 = responses.headers[-2]
         final_reader = responses.headers[-1]
 
-        expected_log = writer_0.to_string() + writer_1.to_string()
+        expected_log = writer_0.to_string() + "\n" + writer_1.to_string() + "\n"
         actual_log = final_reader.response.text
 
         for i, reader in enumerate(readers):
