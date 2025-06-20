@@ -124,7 +124,7 @@ void add_to_log(server_log log, const char* data, int data_len){
         temp = temp->next;
     }
 
-    usleep(200000); // set this to 0.2 seconds (in microseconds)
+    //usleep(200000); // set this to 0.2 seconds (in microseconds)
 
     // instantiate an empty cell at the end
     temp->next = (log_entry)malloc(sizeof(struct Log_Entry));
