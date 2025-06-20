@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
 
     getargs(&port, &threads_size, &queue_size, argc, argv);
 
-    threads_size = (threads_size < queue_size) ? threads_size : queue_size; // threads cannot be more than queue size
+    //threads_size = (threads_size < queue_size) ? threads_size : queue_size; // threads cannot be more than queue size
 
     // Create the thread pool and request queue
     pthread_t threads[threads_size];
