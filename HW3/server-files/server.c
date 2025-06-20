@@ -86,10 +86,12 @@ int main(int argc, char *argv[])
 
     getargs(&port, &threads_size, &queue_size, argc, argv);
 
+    threads_size = (threads_size < queue_size) ? threads_size : queue_size; // threads cannot be more than queue size
+
     // Create the thread pool and request queue
     pthread_t threads[threads_size];
     fifo_queue queue;                   // queue of the connections
-    fifo_init(&queue, queue_size);
+    fifo_init(&queue, queue_size, threads_size);
 
 
     // arguments the thread will use
@@ -104,7 +106,7 @@ int main(int argc, char *argv[])
     while (1){
         // Wait until there is space in the queue
         pthread_mutex_lock(&queue.lock);
-        while (queue.count == queue.max_size){
+        while (queue.queue_size + queue.active_count >= queue.max_size){
             pthread_cond_wait(&queue.not_full, &queue.lock);
         }
         pthread_mutex_unlock(&queue.lock);

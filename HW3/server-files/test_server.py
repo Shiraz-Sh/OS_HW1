@@ -225,7 +225,7 @@ class TestServer:
 
     @pytest.fixture
     def responses(self, request) -> typing.Generator[Responses, None, None]:
-        port = 8888
+        port = 8889
 
         params: ResponseParams = {
             "threads": request.param["threads"],
