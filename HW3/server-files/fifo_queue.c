@@ -53,10 +53,16 @@ int fifo_dequeue(fifo_queue* fifo, request_val* value){
 
     *value = fifo->queue[fifo->head];
     fifo->head = (fifo->head + 1) % fifo->max_size;
-    fifo->count--;
 
-    pthread_cond_signal(&fifo->not_full);
     pthread_mutex_unlock(&fifo->lock);
 
     return 0;
 }
+
+void fifo_decrease_count(fifo_queue* fifo){
+    pthread_mutex_lock(&fifo->lock);
+    fifo->count--;
+    pthread_cond_signal(&fifo->not_full);
+    pthread_mutex_unlock(&fifo->lock);
+}
+

@@ -35,4 +35,6 @@ int fifo_enqueue(fifo_queue* fifo, request_val value);
 // Remove from queue (from head), blocks if empty
 int fifo_dequeue(fifo_queue* fifo, request_val* value);
 
+void fifo_decrease_count(fifo_queue* fifo);
+
 #endif

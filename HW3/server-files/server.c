@@ -38,7 +38,7 @@ void getargs(int *port, int *threads_size, int *queue_size, int argc, char *argv
 
 // arguments the thread will use
 typedef struct{
-    fifo_queue *queue;
+    fifo_queue* queue;
     int thread_id;
 } thread_args_struct;
 
@@ -69,7 +69,9 @@ void* thread_functon(void* arg) {
         requestHandle(request.connfd, request.arrival, request.dispatch, t_stats, *request.log);
         
         Close(request.connfd);
+        fifo_decrease_count(args->queue);
     }
+    free(t_stats);
     free(args);
 }
 
@@ -89,6 +91,7 @@ int main(int argc, char *argv[])
     fifo_queue queue;                   // queue of the connections
     fifo_init(&queue, queue_size);
 
+
     // arguments the thread will use
     for (unsigned int i = 0; i < threads_size; i++){
         thread_args_struct* thread_args = (thread_args_struct*)malloc(sizeof(thread_args_struct));
@@ -98,7 +101,14 @@ int main(int argc, char *argv[])
     }
 
     listenfd = Open_listenfd(port);
-    while (1) {
+    while (1){
+        // Wait until there is space in the queue
+        pthread_mutex_lock(&queue.lock);
+        while (queue.count == queue.max_size){
+            pthread_cond_wait(&queue.not_full, &queue.lock);
+        }
+        pthread_mutex_unlock(&queue.lock);
+
         // Wait for a connection
         clientlen = sizeof(clientaddr);
         connfd = Accept(listenfd, (SA *)&clientaddr, (socklen_t *) &clientlen);
