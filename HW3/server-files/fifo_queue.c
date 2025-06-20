@@ -1,11 +1,16 @@
 #include "fifo_queue.h"
 #include <stdlib.h>
 #include <pthread.h>
+#include "utils.h"
 
 // initialize queue
 void fifo_init(fifo_queue* fifo, int size, int num_threads){
 
     fifo->queue = malloc(size * sizeof(request_val));
+    if (fifo->queue == NULL){
+        MALLOC_FAIL(size * sizeof(request_val));
+        exit(1);
+    }
     fifo->head = 0;
     fifo->tail = 0;
     fifo->queue_size = 0;

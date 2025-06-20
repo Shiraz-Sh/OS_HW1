@@ -2,6 +2,7 @@
 #include "fifo_queue.h"
 #include "request.h"
 #include "log.h"
+#include "utils.h"
 
 #include <stdio.h>
 
@@ -51,6 +52,11 @@ void* thread_functon(void* arg) {
     thread_args_struct* args = (thread_args_struct*)arg;
 
     threads_stats t_stats = (threads_stats)malloc(sizeof(struct Threads_stats));
+    if (t_stats == NULL){
+        free(args);
+        MALLOC_FAIL(sizeof(struct Threads_stats));
+        exit(1);
+    }
     t_stats->id = args->thread_id;
     t_stats->dynm_req = 0;
     t_stats->post_req = 0;
@@ -97,6 +103,12 @@ int main(int argc, char *argv[])
     // arguments the thread will use
     for (unsigned int i = 0; i < threads_size; i++){
         thread_args_struct* thread_args = (thread_args_struct*)malloc(sizeof(thread_args_struct));
+        if (thread_args == NULL){
+            MALLOC_FAIL(sizeof(thread_args_struct));
+            fifo_destroy(&queue);
+            destroy_log(log);
+            exit(1);
+        }
         thread_args->queue = &queue;
         thread_args->thread_id = i + 1;
         pthread_create(&threads[i], NULL, thread_functon, thread_args);

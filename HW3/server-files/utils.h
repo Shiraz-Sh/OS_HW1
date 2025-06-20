@@ -9,4 +9,6 @@
 
 #endif
 
+#define MALLOC_FAIL(size) fprintf(stderr, "error: malloc failed to allocate size %ld", size)
+
 #endif 
