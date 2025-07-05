@@ -1,6 +1,7 @@
 #include <unistd.h> // for sbrk
 #include <stddef.h> // for size_t
 #include <bits/stdc++.h> // for memset
+#include <sys/mman.h> // for mmap, munmap
 
 
 #define MAX_ORDER 10
@@ -74,6 +75,15 @@ struct Handle{
     DataList tbl[MAX_ORDER];
     DataList mmaped;
 } handler;
+
+
+void _init_handler();
+void _init_block(MallocMetadata* block, DataList* datalist, size_t size, bool is_real_size);
+void _remove_block(MallocMetadata* block, DataList* datalist);
+void _merge_blocks(MallocMetadata* block, DataList* org_datalist, DataList* dst_datalist, int order);
+MallocMetadata* _split_block(MallocMetadata* block, DataList* org_datalist, DataList* dst_datalist, size_t size);
+void _populate_block(MallocMetadata* block, DataList* datalist, size_t size);
+MallocMetadata* find_empty_block(DataList* list);
 
 void _init_handler(){
     handler.init = true;
@@ -309,7 +319,7 @@ void sfree(void* p){
 
     // unmap
     if (order == Orders_mapping::MEGA){
-        unmap(metadata_p, metadata_p->real_size);
+        munmap(metadata_p, metadata_p->real_size);
     }
     else if (order < MAX_ORDER){
         _merge_blocks(metadata_p, datalist, &handler.tbl[order + 1], order);    // merge with buddy if buddy is also free recursively
