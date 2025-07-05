@@ -46,7 +46,7 @@ struct Orders_mapping{
         return MEGA;
     }
 
-    static int order_to_size(int order){
+    static size_t order_to_size(int order){
         if (order == MEGA){
             return -1;
         }
@@ -109,7 +109,12 @@ void _init_handler(){
     // assert(i == 32);
 }
 
-void _init_block(MallocMetadata* block, DataList* datalist, size_t size, bool is_real_size = false){
+void _init_block(
+    MallocMetadata* block,
+    DataList* datalist,
+    size_t size,
+    bool is_real_size = false
+){
     block->is_free = true;
     block->next = nullptr;
     block->prev = datalist->last_data_list;
@@ -141,6 +146,32 @@ void _remove_block(MallocMetadata* block, DataList* datalist){
     block->prev = nullptr;
 }
 
+// merge blocks recursively
+void _merge_blocks(
+    MallocMetadata* block,
+    DataList* org_datalist,
+    DataList* dst_datalist,
+    int order
+){
+    if (order == MAX_ORDER)
+        return;
+
+    // check if buddy is also freed
+    MallocMetadata* buddy = (MallocMetadata*)((size_t)block ^ block->real_size);
+    if (!buddy->is_free){
+        return;
+    }
+
+    _remove_block(block, org_datalist);
+    _remove_block(buddy, org_datalist);
+
+    MallocMetadata* comb_block = ((size_t)block < (size_t)buddy) ? block : buddy;
+    _init_block(comb_block, dst_datalist, comb_block->real_size * 2);
+
+    if (order + 1 < MAX_ORDER)
+        _merge_blocks(comb_block, &handler.tbl[order + 1], &handler.tbl[order + 2], order + 1);
+}
+
 MallocMetadata* _split_block(
     MallocMetadata* block,
     DataList* org_datalist,
@@ -155,7 +186,11 @@ MallocMetadata* _split_block(
     return b_block;
 }
 
-void _populate_block(MallocMetadata* block, DataList* datalist, size_t size){
+void _populate_block(
+    MallocMetadata* block,
+    DataList* datalist,
+    size_t size
+){
     // we don't really need this but maybe for fragmentation computation or something
     block->size = size + sizeof(MallocMetadata);
     block->is_free = false;
@@ -224,14 +259,12 @@ void* smalloc(size_t size){
         }
 
         // TODO: split to buddies (should this be done recursivly to fine grain?)
-        if (perfect_fit || order == 0 || size + sizeof(MallocMetadata) >= Orders_mapping::order_to_size(order - 1)){
-            _populate_block(block, datalist, size);
+        size_t shrink_to_size = Orders_mapping::order_to_size(order - 1);
+        if (order > 0 && size + sizeof(MallocMetadata) <= shrink_to_size && !perfect_fit){
+            datalist = &handler.tbl[order - 1];
+            _split_block(block, &handler.tbl[order], datalist, shrink_to_size);
         }
-        else{
-            // Split
-            _split_block(block, &handler.tbl[order], &handler.tbl[order - 1], Orders_mapping::order_to_size(order - 1));
-            _populate_block(block, &handler.tbl[order - 1], size);
-        }
+        _populate_block(block, datalist, size);
         return block->data;
     }
 
@@ -274,7 +307,14 @@ void sfree(void* p){
     
     datalist->num_free_blocks++;
 
-    // TODO: merge with buddy
+    // unmap
+    if (order == Orders_mapping::MEGA){
+        unmap(metadata_p, metadata_p->real_size);
+    }
+    else if (order < MAX_ORDER){
+        _merge_blocks(metadata_p, datalist, &handler.tbl[order + 1], order);    // merge with buddy if buddy is also free recursively
+    }
+    metadata_p->is_free = true;
     return;
 }
 
