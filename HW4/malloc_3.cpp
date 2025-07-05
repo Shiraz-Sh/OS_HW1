@@ -36,13 +36,21 @@ struct Orders_mapping{
     static const size_t orders[MAX_ORDER + 1];
 
     // given a size return of which order is it.
-    static int map_order(size_t value){
-        value += sizeof(MallocMetadata);
+    static int size_to_order(size_t size, bool is_real_size){
+        if (!is_real_size)
+            size += sizeof(MallocMetadata);
         size_t last = 0;
         for (int i = 0; i <= MAX_ORDER; i++)
-            if (value <= Orders_mapping::orders[i])
+            if (size <= Orders_mapping::orders[i])
                 return i;
         return MEGA;
+    }
+
+    static int order_to_size(int order){
+        if (order == MEGA){
+            return -1;
+        }
+        return 1 << (7 + order);
     }
 };
 
@@ -93,7 +101,7 @@ void _init_handler(){
     int i = 0;
     handler.tbl[MAX_ORDER].first_data_list = aligned_mem_start;
     do{
-        _init_block(temp, &handler.tbl[MAX_ORDER], 128 * KB - sizeof(MallocMetadata));
+        _init_block(temp, &handler.tbl[MAX_ORDER], 128 * KB, true);
         temp += 128 * KB;
         i++;
     } while (i < 32);
@@ -101,12 +109,12 @@ void _init_handler(){
     // assert(i == 32);
 }
 
-void _init_block(MallocMetadata* block, DataList* datalist, size_t size){
+void _init_block(MallocMetadata* block, DataList* datalist, size_t size, bool is_real_size = false){
     block->is_free = true;
     block->next = nullptr;
     block->prev = datalist->last_data_list;
-    block->size = size;
-    block->real_size = size + sizeof(MallocMetadata);
+    block->size = size - (is_real_size) ? sizeof(MallocMetadata) : 0;
+    block->real_size = size + (is_real_size) ? 0 : sizeof(MallocMetadata);
     block->data = (void*)((char*)block + sizeof(MallocMetadata));
 
     if (datalist->last_data_list){  // if there is a last node
@@ -116,6 +124,35 @@ void _init_block(MallocMetadata* block, DataList* datalist, size_t size){
     datalist->last_data_list = block;
     datalist->num_blocks++;
     datalist->num_free_blocks++;
+}
+
+// remove a block from a list but deos not free it
+void _remove_block(MallocMetadata* block, DataList* datalist){
+    if (block->prev)
+        block->prev->next = block->next;
+    if (block->next)
+        block->next->prev = block->prev;
+    if (block->is_free)
+        datalist->num_free_blocks--;
+    
+    datalist->num_blocks--;
+
+    block->next = nullptr;
+    block->prev = nullptr;
+}
+
+MallocMetadata* _split_block(
+    MallocMetadata* block,
+    DataList* org_datalist,
+    DataList* dst_datalist,
+    size_t size
+){
+    _remove_block(block, org_datalist);
+    _init_block(block, dst_datalist, size, true);
+
+    MallocMetadata* b_block = (MallocMetadata*)((char*)block + size);
+    _init_block(b_block, dst_datalist, size, true);
+    return b_block;
 }
 
 void _populate_block(MallocMetadata* block, DataList* datalist, size_t size){
@@ -152,7 +189,7 @@ void* smalloc(size_t size){
         _init_handler();
     }
 
-    int order = Orders_mapping::map_order(size);
+    int order = Orders_mapping::size_to_order(size, false);
     if (order == Orders_mapping::MEGA){
         void* mapped = mmap(NULL, size + sizeof(MallocMetadata),
             PROT_READ | PROT_WRITE,
@@ -162,7 +199,7 @@ void* smalloc(size_t size){
             return nullptr;
         }
         MallocMetadata* block = (MallocMetadata*)mapped;
-        _init_block(block, &handler.mmaped, size);
+        _init_block(block, &handler.mmaped, size, false);
         _populate_block(block, &handler.mmaped, size);
         return block->data;
     }
@@ -172,10 +209,11 @@ void* smalloc(size_t size){
     bool perfect_fit = true;
     while (true){
         MallocMetadata* block = find_empty_block(datalist);
+        datalist = &handler.tbl[order];
+
         if (block == nullptr){
             if (order < MAX_ORDER){
                 order++;
-                datalist = &handler.tbl[order];
                 perfect_fit = false;
                 continue;
             }
@@ -185,19 +223,20 @@ void* smalloc(size_t size){
             }
         }
 
-        // populate block
-        if (perfect_fit){
+        // TODO: split to buddies (should this be done recursivly to fine grain?)
+        if (perfect_fit || order == 0 || size + sizeof(MallocMetadata) >= Orders_mapping::order_to_size(order - 1)){
             _populate_block(block, datalist, size);
-            return block->data;
         }
         else{
-            // TODO: split to buddies (should this be done recursivly?)
+            // Split
+            _split_block(block, &handler.tbl[order], &handler.tbl[order - 1], Orders_mapping::order_to_size(order - 1));
+            _populate_block(block, &handler.tbl[order - 1], size);
         }
+        return block->data;
     }
 
     return nullptr; // won't reach this
 }
-
 
 void* scalloc(size_t num, size_t size){
     // checks for invalid inputs
@@ -226,7 +265,7 @@ void sfree(void* p){
 
     MallocMetadata* metadata_p = (MallocMetadata*)((char*)p - sizeof(MallocMetadata));
     metadata_p->is_free = true;
-    int order = Orders_mapping::map_order(metadata_p->real_size - sizeof(MallocMetadata));
+    int order = Orders_mapping::size_to_order(metadata_p->real_size, true);
     DataList* datalist;
     if (order == Orders_mapping::MEGA)
         datalist = &handler.mmaped;
@@ -235,37 +274,36 @@ void sfree(void* p){
     
     datalist->num_free_blocks++;
 
-    // TODO: merge with buddy 
+    // TODO: merge with buddy
     return;
 }
 
-// void* srealloc(void* oldp, size_t size){
+void* srealloc(void* oldp, size_t size){
+    // checks for invalid inputs
+    if (size == 0 || size > 100000000){ // if equal to 0 or larger then 10^8
+        return NULL;
+    }
 
-//     // checks for invalid inputs
-//     if (size == 0 || size > 100000000){ // if equal to 0 or larger then 10^8
-//         return NULL;
-//     }
+    if (oldp == nullptr)
+        return smalloc(size);
 
-//     if (oldp == nullptr)
-//         return smalloc(size);
+    size_t metadata_size = sizeof(MallocMetadata);
+    MallocMetadata* oldp_metadata = (MallocMetadata*)((char*)oldp - metadata_size);
 
-//     size_t metadata_size = _size_meta_data();
-//     MallocMetadata* oldp_metadata = (MallocMetadata*)((char*)oldp - metadata_size);
+    // If ‘size’ is smaller than or equal to the current block’s size, reuses the same block.
+    if ((size + metadata_size) <= oldp_metadata->size){
+        return oldp;
+    }
 
-//     // If ‘size’ is smaller than or equal to the current block’s size, reuses the same block.
-//     if ((size + metadata_size) <= oldp_metadata->size){
-//         return oldp;
-//     }
+    void* result = smalloc(size);
+    if (result == nullptr)
+        return nullptr;
 
-//     void* result = smalloc(size);
-//     if (result == nullptr)
-//         return nullptr;
-
-//     size_t old_data_size = oldp_metadata->size - _size_meta_data(); // if oldp is smaller from size
-//     std::memmove(result, oldp, std::min(old_data_size, size));
-//     sfree(oldp);
-//     return result;
-// }
+    size_t old_data_size = oldp_metadata->size - metadata_size; // if oldp is smaller from size
+    std::memmove(result, oldp, std::min(old_data_size, size));
+    sfree(oldp);
+    return result;
+}
 
 
 
