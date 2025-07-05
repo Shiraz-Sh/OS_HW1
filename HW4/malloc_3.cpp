@@ -10,6 +10,7 @@
 
 struct MallocMetadata{
     size_t size = 0;  // requested size + meta-data structure size
+    size_t real_size = 0;
     bool is_free = true;
     void* data = nullptr;  // pointer to the first byte of our allocated data
     MallocMetadata* next = nullptr;
@@ -36,6 +37,7 @@ struct Orders_mapping{
 
     // given a size return of which order is it.
     static int map_order(size_t value){
+        value += sizeof(MallocMetadata);
         size_t last = 0;
         for (int i = 0; i <= MAX_ORDER; i++)
             if (value <= Orders_mapping::orders[i])
@@ -66,6 +68,8 @@ struct Handle{
 } handler;
 
 void _init_handler(){
+    handler.init = true;
+
     const size_t ALLOCATE = 1 << 22; // 32 * 128KiB = 4MiB = 2^22 B
 
     // get current brk
@@ -89,7 +93,7 @@ void _init_handler(){
     int i = 0;
     handler.tbl[MAX_ORDER].first_data_list = aligned_mem_start;
     do{
-        _init_block(temp, &handler.tbl[MAX_ORDER], 128 * KB);
+        _init_block(temp, &handler.tbl[MAX_ORDER], 128 * KB - sizeof(MallocMetadata));
         temp += 128 * KB;
         i++;
     } while (i < 32);
@@ -102,6 +106,7 @@ void _init_block(MallocMetadata* block, DataList* datalist, size_t size){
     block->next = nullptr;
     block->prev = datalist->last_data_list;
     block->size = size;
+    block->real_size = size + sizeof(MallocMetadata);
     block->data = (void*)((char*)block + sizeof(MallocMetadata));
 
     if (datalist->last_data_list){  // if there is a last node
@@ -194,32 +199,45 @@ void* smalloc(size_t size){
 }
 
 
-// void* scalloc(size_t num, size_t size){
-//     // checks for invalid inputs
-//     if (size == 0 || num == 0 || (size * num) > 100000000){ // if equal to 0 or larger then 10^8
-//         return NULL;
-//     }
+void* scalloc(size_t num, size_t size){
+    // checks for invalid inputs
+    if (size == 0 || num == 0 || (size * num) > 100000000){ // if equal to 0 or larger then 10^8
+        return NULL;
+    }
 
-//     void* allocated_space = smalloc(num * size);
-//     if (allocated_space == nullptr){
-//         return nullptr;
-//     }
+    void* allocated_space = smalloc(num * size);
+    if (allocated_space == nullptr){
+        return nullptr;
+    }
 
-//     std::memset(allocated_space, 0, num * size);
+    std::memset(allocated_space, 0, num * size);
 
-//     return allocated_space;
-// }
+    return allocated_space;
+}
 
 
-// void sfree(void* p){
-//     if (p == nullptr)
-//         return;
+void sfree(void* p){
+    if (p == nullptr)
+        return;
 
-//     MallocMetadata* metadata_p = (MallocMetadata*)((char*)p - _size_meta_data());
-//     metadata_p->is_free = true;
-//     dataList.num_free_blocks++;
-//     return;
-// }
+    if (!handler.init){
+        return;
+    }
+
+    MallocMetadata* metadata_p = (MallocMetadata*)((char*)p - sizeof(MallocMetadata));
+    metadata_p->is_free = true;
+    int order = Orders_mapping::map_order(metadata_p->real_size - sizeof(MallocMetadata));
+    DataList* datalist;
+    if (order == Orders_mapping::MEGA)
+        datalist = &handler.mmaped;
+    else
+        datalist = &handler.tbl[order];
+    
+    datalist->num_free_blocks++;
+
+    // TODO: merge with buddy 
+    return;
+}
 
 // void* srealloc(void* oldp, size_t size){
 
