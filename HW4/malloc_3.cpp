@@ -14,7 +14,7 @@
 const uintptr_t KB = 1 << 10;
 const uintptr_t MB = 1 << 20;
 
-#define DEBUG
+// #define DEBUG
 #ifdef DEBUG
 #define DEBUG_ASSERT(test) {assert(test); std::cout << "passed: [ " << #test << " ]" << std::endl;} 
 #define DEBUG_PRINT(fmt, ...) \
@@ -504,17 +504,12 @@ void sfree(void* p){
 
     // unmap
     if (order == Orders_mapping::MEGA){
-        DEBUG_PRINT("try to remove from list");
         _remove_block(metadata_p, datalist);
-        DEBUG_PRINT("try to unmap: %p, releasing: %lu bytes", metadata_p, metadata_p->real_size);
         munmap(metadata_p, metadata_p->real_size);
     }
     else if (order < MAX_ORDER){
-        DEBUG_PRINT("try to merge");
         _merge_blocks(metadata_p, datalist, &handler.tbl[order + 1], order);    // merge with buddy if buddy is also free recursively
     }
-    metadata_p->is_free = true;
-    return;
 }
 
 void* srealloc(void* oldp, size_t size){
