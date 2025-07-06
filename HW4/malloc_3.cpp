@@ -5,7 +5,7 @@
 #include <cassert>
 #include <iostream>
 
-#include "header.h" // TODO: remove this before submit!!!!!!!
+// #include "header.h" // TODO: remove this before submit!!!!!!!
 
 
 #define MAX_ORDER 10
@@ -26,14 +26,14 @@ const uintptr_t MB = 1 << 20;
 #endif
 
 // TODO: uncomment this before submit
-// struct MallocMetadata{
-//     size_t size = 0;  // requested size + meta-data structure size
-//     size_t real_size = 0;
-//     bool is_free = true;
-//     void* data = nullptr;  // pointer to the first byte of our allocated data
-//     MallocMetadata* next = nullptr;
-//     MallocMetadata* prev = nullptr;
-// };
+struct MallocMetadata{
+    size_t size = 0;  // requested size + meta-data structure size
+    size_t real_size = 0;
+    bool is_free = true;
+    void* data = nullptr;  // pointer to the first byte of our allocated data
+    MallocMetadata* next = nullptr;
+    MallocMetadata* prev = nullptr;
+};
 
 struct DataList{
     MallocMetadata* first_data_list = nullptr;
@@ -109,9 +109,8 @@ size_t _num_meta_data_bytes();
 size_t _size_meta_data();
 
 
-
+// TODO: remove this before submit
 void print_handler(){
-    int free_bytes = 0;
     for (int i = 0; i <= MAX_ORDER; i++){
         MallocMetadata* curr = handler.tbl[i].first_data_list;
         std::cout << "<<<<< list ORDER_" << i << "<<<<<" << std::endl;
