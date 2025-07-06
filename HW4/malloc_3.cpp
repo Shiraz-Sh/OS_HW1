@@ -270,6 +270,9 @@ void _init_block(
     if (datalist->last_data_list){  // if there is a last node
         datalist->last_data_list->next = block;
     }
+    if (!datalist->first_data_list){
+        datalist->first_data_list = block;
+    }
 
     datalist->last_data_list = block;
     datalist->num_blocks++;
@@ -418,7 +421,7 @@ void* smalloc(size_t size){
         void* mapped = mmap(NULL, size + sizeof(MallocMetadata),
             PROT_READ | PROT_WRITE,
             MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-        DEBUG_PRINT("MMAPED!!!");
+        DEBUG_PRINT("MMAPED: %p, %lu bytes", mapped, size+sizeof(MallocMetadata));
         if (mapped == nullptr){
             // handle error
             return nullptr;
@@ -501,9 +504,13 @@ void sfree(void* p){
 
     // unmap
     if (order == Orders_mapping::MEGA){
+        DEBUG_PRINT("try to remove from list");
+        _remove_block(metadata_p, datalist);
+        DEBUG_PRINT("try to unmap: %p, releasing: %lu bytes", metadata_p, metadata_p->real_size);
         munmap(metadata_p, metadata_p->real_size);
     }
     else if (order < MAX_ORDER){
+        DEBUG_PRINT("try to merge");
         _merge_blocks(metadata_p, datalist, &handler.tbl[order + 1], order);    // merge with buddy if buddy is also free recursively
     }
     metadata_p->is_free = true;

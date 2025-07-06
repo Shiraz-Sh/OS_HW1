@@ -149,7 +149,7 @@ void test_large_allocation_mmap() {
 
     size_t large_size = 128 * 1024;  // 128KB - should use mmap
     void* large_ptr = smalloc(large_size);
-    print_handler();
+    // print_handler();
 
     assert(large_ptr != nullptr);
 
