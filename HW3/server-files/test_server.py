@@ -262,7 +262,7 @@ class TestServer:
             headers = asyncio.run(self._send_cgi_requests(port, params))
             yield Responses(headers, params)
         finally:
-            proc.kill()
+            proc.terminate()
             proc.wait()
 
     async def _send_cgi_requests(

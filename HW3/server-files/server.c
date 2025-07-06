@@ -43,12 +43,21 @@ typedef struct{
     int thread_id;
 } thread_args_struct;
 
+bool exit_loop_thread = false;
+
+void cleanup_and_exit_thread(int signum){
+    printf("Caught signal %d, cleaning up...\n", signum);
+    exit_loop_thread = true;
+}
+
 /**
  * the function every thread will run on its own.
  * @param arg - the arguments (queue, thread_id)
  * @return
  */
-void* thread_functon(void* arg) {
+void* thread_functon(void* arg){
+    signal(SIGTERM, cleanup_and_exit_thread);
+    signal(SIGINT, cleanup_and_exit_thread);
     thread_args_struct* args = (thread_args_struct*)arg;
 
     threads_stats t_stats = (threads_stats)malloc(sizeof(struct Threads_stats));
@@ -63,7 +72,7 @@ void* thread_functon(void* arg) {
     t_stats->stat_req = 0;
     t_stats->total_req = 0;
 
-    while (1){
+    while (!exit_loop_thread){
         request_val request;
         fifo_dequeue(args->queue, &request);
 
@@ -81,9 +90,18 @@ void* thread_functon(void* arg) {
     free(args);
 }
 
+bool exit_loop_main = false;
 
-int main(int argc, char *argv[])
+void cleanup_and_exit_main(int signum){
+    printf("Caught signal %d, cleaning up...\n", signum);
+    exit_loop_main = true;
+}
+
+int main(int argc, char* argv[])
 {
+    signal(SIGTERM, cleanup_and_exit_main);
+    signal(SIGINT, cleanup_and_exit_main);
+
     // Create the global server log
     server_log log = create_log();
 
@@ -138,9 +156,24 @@ int main(int argc, char *argv[])
         };
 
         fifo_enqueue(&queue, new_request);      // thread-safe enqueue
+
+        // >>>>> TODO: make sure to exit, delete this before submission!
+        // gettimeofday(&end, NULL);
+        // timeval_diff(&start, &end, &diff);
+        // if (diff.tv_sec >= 100){
+        //     break;
+        // }
+    }
+
+    // ------------------------------------------------------------------------------
+    // I am not sure if this is needed but might be useful later
+    // ------------------------------------------------------------------------------
+    // kill all threads using SIGKILL while making sure they are not in mid run using mutex
+    // pthread_mutex_lock(&requests_lock);
+    for (unsigned int i = 0; i < threads_size; i++){
+        pthread_kill(threads[i], SIGTERM); // send SIGKILL to each thread
     }
 
     destroy_log(log);   // Clean up the server log before exiting
-
     fifo_destroy(&queue);  // free allocated place in queue and destroy locks/conds
 }
