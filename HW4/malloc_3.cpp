@@ -14,7 +14,7 @@
 const uintptr_t KB = 1 << 10;
 const uintptr_t MB = 1 << 20;
 
-// #define DEBUG
+#define DEBUG
 #ifdef DEBUG
 #define DEBUG_ASSERT(test) {assert(test); std::cout << "passed: [ " << #test << " ]" << std::endl;} 
 #define DEBUG_PRINT(fmt, ...) \
@@ -288,6 +288,13 @@ void _remove_block(MallocMetadata* block, DataList* datalist){
     
     datalist->num_blocks--;
 
+    if (datalist->first_data_list == block){
+        datalist->first_data_list = block->next;
+    }
+    if (datalist->last_data_list == block){
+        datalist->last_data_list = block->prev;
+    }
+
     block->next = nullptr;
     block->prev = nullptr;
 }
@@ -411,6 +418,7 @@ void* smalloc(size_t size){
         void* mapped = mmap(NULL, size + sizeof(MallocMetadata),
             PROT_READ | PROT_WRITE,
             MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+        DEBUG_PRINT("MMAPED!!!");
         if (mapped == nullptr){
             // handle error
             return nullptr;

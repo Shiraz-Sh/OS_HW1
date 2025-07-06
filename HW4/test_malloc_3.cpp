@@ -47,7 +47,7 @@ void test_initial_state() {
     // First allocation should trigger initialization
     void* ptr = smalloc(100);
     assert(ptr != nullptr);
-    print_handler();
+    // print_handler();
 
     // Should have 32 total blocks initially, 1 allocated, 31 free
     // But due to splitting, we might have more blocks
@@ -149,6 +149,7 @@ void test_large_allocation_mmap() {
 
     size_t large_size = 128 * 1024;  // 128KB - should use mmap
     void* large_ptr = smalloc(large_size);
+    print_handler();
 
     assert(large_ptr != nullptr);
 
