@@ -94,5 +94,6 @@
         "log.h": "c"
     },
     "editor.fontSize": 18,
-    "editor.fontWeight": "bold"
+    "editor.fontWeight": "bold",
+    "cmake.sourceDirectory": "C:/Dev/OS-02340123/OS_shared/OS-repo/HW1"
 }

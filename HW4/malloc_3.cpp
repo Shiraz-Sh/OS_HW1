@@ -14,7 +14,7 @@
 const uintptr_t KB = 1 << 10;
 const uintptr_t MB = 1 << 20;
 
-#define DEBUG
+// #define DEBUG
 #ifdef DEBUG
 #define DEBUG_ASSERT(test) {assert(test); std::cout << "passed: [ " << #test << " ]" << std::endl;} 
 #define DEBUG_PRINT(fmt, ...) \
@@ -108,6 +108,39 @@ size_t _num_allocated_bytes();
 size_t _num_meta_data_bytes();
 size_t _size_meta_data();
 
+
+
+void print_handler(){
+    int free_bytes = 0;
+    for (int i = 0; i <= MAX_ORDER; i++){
+        MallocMetadata* curr = handler.tbl[i].first_data_list;
+        std::cout << "<<<<< list ORDER_" << i << "<<<<<" << std::endl;
+        while (curr != nullptr){
+            std::cout << "====================================" << std::endl;
+            std::cout << "is free: " << ((curr->is_free) ? "True" : "False") << std::endl;
+            std::cout << "size (doesn't really matter): " << curr->size << std::endl;
+            std::cout << "real size: " << curr->real_size << std::endl;
+            std::cout << "available: " << curr->real_size - sizeof(MallocMetadata) << std::endl;
+            curr = curr->next;
+        }
+        std::cout << ">>>>> list ORDER_" << i  << ">>>>>" << std::endl;
+    }
+
+    MallocMetadata* curr = handler.mmaped.first_data_list;
+    std::cout << "<<<<< list MEGA ORDER <<<<<" << std::endl;
+    while (curr != nullptr){
+        std::cout << "====================================" << std::endl;
+        std::cout << "is free: " << ((curr->is_free) ? "True" : "False") << std::endl;
+        std::cout << "size (doesn't really matter): " << curr->size << std::endl;
+        std::cout << "real size: " << curr->real_size << std::endl;
+        std::cout << "available: " << curr->real_size - sizeof(MallocMetadata) << std::endl;
+        curr = curr->next;
+    }
+    std::cout << ">>>>> list MEGA ORDER >>>>>" << std::endl;
+}
+
+
+
 size_t _num_free_blocks(){
     DEBUG_PRINT();
     size_t free_blocks = 0;
@@ -126,7 +159,7 @@ size_t _num_free_bytes(){
         MallocMetadata* curr = handler.tbl[i].first_data_list;
         while (curr != nullptr){
             if (curr->is_free){
-                free_bytes += curr->size;
+                free_bytes += curr->real_size - _size_meta_data();
             }
             curr = curr->next;
         }
@@ -135,7 +168,7 @@ size_t _num_free_bytes(){
     MallocMetadata* curr = handler.mmaped.first_data_list;
     while (curr != nullptr){
         if (curr->is_free){
-            free_bytes += curr->size;
+            free_bytes += curr->real_size - _size_meta_data();
         }
         curr = curr->next;
     }
@@ -145,29 +178,25 @@ size_t _num_free_bytes(){
 size_t _num_allocated_blocks(){
     int free_blocks = 0;
     for (int i = 0; i <= MAX_ORDER; i++){
-        free_blocks += handler.tbl[i].num_blocks - handler.tbl[i].num_free_blocks;
+        free_blocks += handler.tbl[i].num_blocks;
     }
 
-    free_blocks += handler.mmaped.num_blocks - handler.mmaped.num_free_blocks;
+    free_blocks += handler.mmaped.num_blocks;
     return free_blocks;
 }
 
 size_t _num_allocated_bytes(){
-    int alloc_bytes = 0;
+    size_t alloc_bytes = 0;
     for (int i = 0; i <= MAX_ORDER; i++){
         MallocMetadata* curr = handler.tbl[i].first_data_list;
         while (curr != nullptr){
-            if (!curr->is_free){
-                alloc_bytes += curr->size;
-            }
+            alloc_bytes += curr->real_size - _size_meta_data();
             curr = curr->next;
         }
     }
     MallocMetadata* curr = handler.mmaped.first_data_list;
     while (curr != nullptr){
-        if (!curr->is_free){
-            alloc_bytes += curr->size;
-        }
+        alloc_bytes += curr->real_size - _size_meta_data();
         curr = curr->next;
     }
     return alloc_bytes;
