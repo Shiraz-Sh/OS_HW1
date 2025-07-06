@@ -1,15 +1,22 @@
 #include "fifo_queue.h"
 #include <stdlib.h>
 #include <pthread.h>
+#include "utils.h"
 
 // initialize queue
-void fifo_init(fifo_queue* fifo, int size){
+void fifo_init(fifo_queue* fifo, int size, int num_threads){
 
     fifo->queue = malloc(size * sizeof(request_val));
+    if (fifo->queue == NULL){
+        MALLOC_FAIL(size * sizeof(request_val));
+        exit(1);
+    }
     fifo->head = 0;
     fifo->tail = 0;
-    fifo->count = 0;
+    fifo->queue_size = 0;
+    fifo->active_count = 0;
     fifo->max_size = size;
+    fifo->num_threads = num_threads;
     
     pthread_mutex_init(&fifo->lock, NULL);
     pthread_cond_init(&fifo->not_full, NULL);
@@ -29,13 +36,13 @@ void fifo_destroy(fifo_queue* fifo){
 int fifo_enqueue(fifo_queue* fifo, request_val value){
 
     pthread_mutex_lock(&fifo->lock);
-    while (fifo->count == fifo->max_size) {
+    while (fifo->queue_size + fifo->active_count >= fifo->max_size) {
         pthread_cond_wait(&fifo->not_full, &fifo->lock);
     }
 
     fifo->queue[fifo->tail] = value;
     fifo->tail = (fifo->tail + 1) % fifo->max_size;
-    fifo->count++;
+    fifo->queue_size++;
 
     pthread_cond_signal(&fifo->not_empty);
     pthread_mutex_unlock(&fifo->lock);
@@ -47,16 +54,24 @@ int fifo_enqueue(fifo_queue* fifo, request_val value){
 int fifo_dequeue(fifo_queue* fifo, request_val* value){
 
     pthread_mutex_lock(&fifo->lock);
-    while (fifo->count == 0) {
+    while (fifo->queue_size == 0 || fifo->active_count == fifo->num_threads) {
         pthread_cond_wait(&fifo->not_empty, &fifo->lock);
     }
 
     *value = fifo->queue[fifo->head];
     fifo->head = (fifo->head + 1) % fifo->max_size;
-    fifo->count--;
+    fifo->queue_size--;
+    fifo->active_count++;
 
-    pthread_cond_signal(&fifo->not_full);
     pthread_mutex_unlock(&fifo->lock);
 
     return 0;
 }
+
+void fifo_decrease_count(fifo_queue* fifo){
+    pthread_mutex_lock(&fifo->lock);
+    fifo->active_count--;
+    pthread_cond_signal(&fifo->not_full);
+    pthread_mutex_unlock(&fifo->lock);
+}
+

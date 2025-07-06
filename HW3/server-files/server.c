@@ -2,6 +2,7 @@
 #include "fifo_queue.h"
 #include "request.h"
 #include "log.h"
+#include "utils.h"
 
 #include <stdio.h>
 
@@ -38,7 +39,7 @@ void getargs(int *port, int *threads_size, int *queue_size, int argc, char *argv
 
 // arguments the thread will use
 typedef struct{
-    fifo_queue *queue;
+    fifo_queue* queue;
     int thread_id;
 } thread_args_struct;
 
@@ -60,6 +61,11 @@ void* thread_functon(void* arg){
     thread_args_struct* args = (thread_args_struct*)arg;
 
     threads_stats t_stats = (threads_stats)malloc(sizeof(struct Threads_stats));
+    if (t_stats == NULL){
+        free(args);
+        MALLOC_FAIL(sizeof(struct Threads_stats));
+        exit(1);
+    }
     t_stats->id = args->thread_id;
     t_stats->dynm_req = 0;
     t_stats->post_req = 0;
@@ -78,6 +84,7 @@ void* thread_functon(void* arg){
         requestHandle(request.connfd, request.arrival, request.dispatch, t_stats, *request.log);
         
         Close(request.connfd);
+        fifo_decrease_count(args->queue);
     }
     free(t_stats);
     free(args);
@@ -103,25 +110,37 @@ int main(int argc, char* argv[])
 
     getargs(&port, &threads_size, &queue_size, argc, argv);
 
+    //threads_size = (threads_size < queue_size) ? threads_size : queue_size; // threads cannot be more than queue size
+
     // Create the thread pool and request queue
     pthread_t threads[threads_size];
     fifo_queue queue;                   // queue of the connections
-    fifo_init(&queue, queue_size);
+    fifo_init(&queue, queue_size, threads_size);
+
 
     // arguments the thread will use
     for (unsigned int i = 0; i < threads_size; i++){
         thread_args_struct* thread_args = (thread_args_struct*)malloc(sizeof(thread_args_struct));
+        if (thread_args == NULL){
+            MALLOC_FAIL(sizeof(thread_args_struct));
+            fifo_destroy(&queue);
+            destroy_log(log);
+            exit(1);
+        }
         thread_args->queue = &queue;
         thread_args->thread_id = i + 1;
         pthread_create(&threads[i], NULL, thread_functon, thread_args);
     }
 
     listenfd = Open_listenfd(port);
+    while (1){
+        // Wait until there is space in the queue
+        pthread_mutex_lock(&queue.lock);
+        while (queue.queue_size + queue.active_count >= queue.max_size){
+            pthread_cond_wait(&queue.not_full, &queue.lock);
+        }
+        pthread_mutex_unlock(&queue.lock);
 
-    // struct timeval start, end, diff;
-    // gettimeofday(&start, NULL);
-
-    while (!exit_loop_main){
         // Wait for a connection
         clientlen = sizeof(clientaddr);
         connfd = Accept(listenfd, (SA *)&clientaddr, (socklen_t *) &clientlen);
