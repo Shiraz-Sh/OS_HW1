@@ -16,14 +16,13 @@ const uintptr_t MB = 1 << 20;
 #ifdef DEBUG
 #define DEBUG_ASSERT(test) {assert(test); std::cout << "passed: [ " << #test << " ]" << std::endl;} 
 #define DEBUG_PRINT(fmt, ...) \
-    fprintf(stderr, "[DEBUG] %s:%d:%s(): " fmt "\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+        fprintf(stderr, "[DEBUG] %s:%d:%s(): " fmt "\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__)
 #else
-#define DEBUG_PRINT(fmt, ...) // no-op
-#define DEBUG_ASSERT(test) {} 
+#define DEBUG_PRINT(...) ((void)0)
+#define DEBUG_ASSERT(...) ((void)0) 
 
 #endif
 
-// TODO: uncomment this before submit
 struct MallocMetadata{
     size_t size = 0;  // requested size + meta-data structure size
     size_t real_size = 0;
@@ -109,7 +108,7 @@ size_t _size_meta_data();
 
 // TODO: remove this before submit
 void print_handler(){
-    #ifdef DEBUG
+#ifdef DEBUG
     for (int i = 0; i <= MAX_ORDER; i++){
         MallocMetadata* curr = handler.tbl[i].first_data_list;
         std::cout << "<<<<< list ORDER_" << i << "<<<<<" << std::endl;
@@ -121,7 +120,7 @@ void print_handler(){
             std::cout << "available: " << curr->real_size - sizeof(MallocMetadata) << std::endl;
             curr = curr->next;
         }
-        std::cout << ">>>>> list ORDER_" << i  << ">>>>>" << std::endl;
+        std::cout << ">>>>> list ORDER_" << i << ">>>>>" << std::endl;
     }
 
     MallocMetadata* curr = handler.mmaped.first_data_list;
@@ -135,7 +134,7 @@ void print_handler(){
         curr = curr->next;
     }
     std::cout << ">>>>> list MEGA ORDER >>>>>" << std::endl;
-    #endif
+#endif
 }
 
 
@@ -164,24 +163,24 @@ size_t _num_free_bytes(){
     }
 
     // not sure if we add this to the calculation or not
-    MallocMetadata* curr = handler.mmaped.first_data_list;
-    while (curr != nullptr){
-        if (curr->is_free){
-            free_bytes += curr->real_size - _size_meta_data();
-        }
-        curr = curr->next;
-    }
+    // MallocMetadata* curr = handler.mmaped.first_data_list;
+    // while (curr != nullptr){
+    //     if (curr->is_free){
+    //         free_bytes += curr->real_size - _size_meta_data();
+    //     }
+    //     curr = curr->next;
+    // }
     return free_bytes;
 }
 
 size_t _num_allocated_blocks(){
-    int free_blocks = 0;
+    int alloc_blocks = 0;
     for (int i = 0; i <= MAX_ORDER; i++){
-        free_blocks += handler.tbl[i].num_blocks;
+        alloc_blocks += handler.tbl[i].num_blocks;
     }
 
-    free_blocks += handler.mmaped.num_blocks; // not sure if we add this to the calculation or not
-    return free_blocks;
+    alloc_blocks += handler.mmaped.num_blocks;
+    return alloc_blocks;
 }
 
 size_t _num_allocated_bytes(){
@@ -193,6 +192,7 @@ size_t _num_allocated_bytes(){
             curr = curr->next;
         }
     }
+    
     MallocMetadata* curr = handler.mmaped.first_data_list;
     while (curr != nullptr){
         alloc_bytes += curr->real_size - _size_meta_data();
@@ -239,7 +239,7 @@ void _init_handler(){
 
     // initialize ORDER_10 blocks, allocate 32 mega blocks of size 128 KB each. 
     MallocMetadata* aligned_mem_start = (MallocMetadata*)(misalignment + curr_addr);
-    DEBUG_ASSERT((size_t)aligned_mem_start % (4 * MB) == 0);
+    // DEBUG_ASSERT((size_t)aligned_mem_start % (4 * MB) == 0);
 
     MallocMetadata* temp = aligned_mem_start;
     int i = 0;
@@ -287,7 +287,7 @@ void _remove_block(MallocMetadata* block, DataList* datalist){
         block->next->prev = block->prev;
     if (block->is_free)
         datalist->num_free_blocks--;
-    
+
     datalist->num_blocks--;
 
     if (datalist->first_data_list == block){
@@ -310,10 +310,10 @@ bool _check_merge_blocks(
     DEBUG_PRINT();
     if (request_size > Orders_mapping::order_to_size(MAX_ORDER))
         return false;
-    
+
     if (Orders_mapping::order_to_size(order) >= request_size)
         return true;
-    
+
     // check if buddy is also freed
     MallocMetadata* buddy = (MallocMetadata*)((size_t)block ^ Orders_mapping::order_to_size(order));
     if (!buddy->is_free){
@@ -334,7 +334,7 @@ MallocMetadata* _merge_blocks(
 ){
     DEBUG_PRINT();
     if (request_size != 0 && request_size <= Orders_mapping::order_to_size(order)){
-        _populate_block(block, org_datalist, request_size);
+        _populate_block(block, dst_datalist, request_size);
         return block;
     }
 
@@ -346,12 +346,15 @@ MallocMetadata* _merge_blocks(
     if (!buddy->is_free){
         return block;
     }
+    if (buddy->real_size != block->real_size){
+        return block;
+    }
 
     _remove_block(block, org_datalist);
     _remove_block(buddy, org_datalist);
 
     MallocMetadata* comb_block = ((size_t)block < (size_t)buddy) ? block : buddy;
-    _init_block(comb_block, dst_datalist, comb_block->real_size * 2);
+    _init_block(comb_block, dst_datalist, comb_block->real_size * 2, true);
 
     if (order + 1 < MAX_ORDER)
         _merge_blocks(comb_block, &handler.tbl[order + 1], &handler.tbl[order + 2], order + 1, request_size);
@@ -402,17 +405,18 @@ MallocMetadata* find_empty_block(DataList* list){
 
 
 // """"""""""""""""""""""""""""""" mallocs """"""""""""""""""""""""""""""
-
+/**
+ *  Allocate memory of a certain size in heap or mmap somewhere
+ */
 void* smalloc(size_t size){
     DEBUG_PRINT();
+    if (!handler.init){
+        _init_handler();
+    }
 
     // checks for invalid inputs
     if (size == 0 || size > 100000000){ // if equal to 0 or larger then 10^8
         return NULL;
-    }
-
-    if (!handler.init){
-        _init_handler();
     }
 
     int order = Orders_mapping::size_to_order(size, false);
@@ -420,7 +424,7 @@ void* smalloc(size_t size){
         void* mapped = mmap(NULL, size + sizeof(MallocMetadata),
             PROT_READ | PROT_WRITE,
             MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-        DEBUG_PRINT("MMAPED: %p, %lu bytes", mapped, size+sizeof(MallocMetadata));
+        DEBUG_PRINT("MMAPED: %p, %lu bytes", mapped, size + sizeof(MallocMetadata));
         if (mapped == nullptr){
             // handle error
             return nullptr;
@@ -450,11 +454,17 @@ void* smalloc(size_t size){
             }
         }
 
-        // TODO: split to buddies (should this be done recursivly to fine grain?)
-        size_t shrink_to_size = Orders_mapping::order_to_size(order - 1);
-        if (order > 0 && size + sizeof(MallocMetadata) <= shrink_to_size && !perfect_fit){
-            datalist = &handler.tbl[order - 1];
-            _split_block(block, &handler.tbl[order], datalist, shrink_to_size);
+        // split to buddies
+        if (order > 0){
+            int temp_order = order - 1;
+            size_t shrink_to_size = Orders_mapping::order_to_size(temp_order);
+
+            while (temp_order >= 0 && size + sizeof(MallocMetadata) <= shrink_to_size && !perfect_fit){
+                datalist = &handler.tbl[temp_order];
+                _split_block(block, &handler.tbl[temp_order + 1], datalist, shrink_to_size);
+                temp_order--;
+                shrink_to_size = Orders_mapping::order_to_size(temp_order);
+            }
         }
         _populate_block(block, datalist, size);
         return block->data;
@@ -463,6 +473,9 @@ void* smalloc(size_t size){
     return nullptr; // won't reach this
 }
 
+/**
+ *  Use smalloc to allocate zeroed memory
+ */
 void* scalloc(size_t num, size_t size){
     DEBUG_PRINT();
     // checks for invalid inputs
@@ -480,7 +493,9 @@ void* scalloc(size_t num, size_t size){
     return allocated_space;
 }
 
-
+/**
+ *  Frees the pointer to memory (from heap or mmap respectively)
+ */
 void sfree(void* p){
     DEBUG_PRINT();
     if (p == nullptr)
@@ -491,6 +506,9 @@ void sfree(void* p){
     }
 
     MallocMetadata* metadata_p = (MallocMetadata*)((char*)p - sizeof(MallocMetadata));
+    if (metadata_p->is_free)
+        return;
+    
     metadata_p->is_free = true;
     int order = Orders_mapping::size_to_order(metadata_p->real_size, true);
     DataList* datalist;
@@ -498,7 +516,7 @@ void sfree(void* p){
         datalist = &handler.mmaped;
     else
         datalist = &handler.tbl[order];
-    
+
     datalist->num_free_blocks++;
 
     // unmap
@@ -511,6 +529,9 @@ void sfree(void* p){
     }
 }
 
+/**
+ * Implements the simple realloc
+ */
 void* srealloc(void* oldp, size_t size){
     DEBUG_PRINT();
     // checks for invalid inputs
@@ -541,7 +562,7 @@ void* srealloc(void* oldp, size_t size){
     // try using merge
     if (_check_merge_blocks(oldp_metadata, size, order)){
         // itrative merge until no need to merge
-        result = (void*)_merge_blocks(oldp_metadata, &handler.tbl[order], &handler.tbl[order + 1], order, size);
+        result = (void*)_merge_blocks(oldp_metadata, &handler.tbl[order], &handler.tbl[order + 1], order, size)->data;
         merged = true;
     }
     else{
@@ -557,6 +578,3 @@ void* srealloc(void* oldp, size_t size){
         sfree(oldp);
     return result;
 }
-
-
-
