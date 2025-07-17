@@ -14,11 +14,12 @@ const uintptr_t MB = 1 << 20;
 
 // #define DEBUG
 #ifdef DEBUG
-#define DEBUG_ASSERT(test) {assert(test); std::cout << "passed: [ " << #test << " ]" << std::endl;} 
-#define DEBUG_PRINT(fmt, ...) \
-    fprintf(stderr, "[DEBUG] %s:%d:%s(): " fmt "\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+    #define DEBUG_ASSERT(test) {assert(test); std::cout << "passed: [ " << #test << " ]" << std::endl;} 
+    #define DEBUG_PRINT(fmt, ...) \
+        fprintf(stderr, "[DEBUG] %s:%d:%s(): " fmt "\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__)
 #else
-#define DEBUG_PRINT(fmt, ...) // no-op
+    #define DEBUG_PRINT(...) ((void)0)
+
 #define DEBUG_ASSERT(test) {} 
 
 #endif
@@ -164,24 +165,24 @@ size_t _num_free_bytes(){
     }
 
     // not sure if we add this to the calculation or not
-    MallocMetadata* curr = handler.mmaped.first_data_list;
-    while (curr != nullptr){
-        if (curr->is_free){
-            free_bytes += curr->real_size - _size_meta_data();
-        }
-        curr = curr->next;
-    }
+    // MallocMetadata* curr = handler.mmaped.first_data_list;
+    // while (curr != nullptr){
+    //     if (curr->is_free){
+    //         free_bytes += curr->real_size - _size_meta_data();
+    //     }
+    //     curr = curr->next;
+    // }
     return free_bytes;
 }
 
 size_t _num_allocated_blocks(){
-    int free_blocks = 0;
+    int alloc_blocks = 0;
     for (int i = 0; i <= MAX_ORDER; i++){
-        free_blocks += handler.tbl[i].num_blocks;
+        alloc_blocks += handler.tbl[i].num_blocks;
     }
 
-    free_blocks += handler.mmaped.num_blocks; // not sure if we add this to the calculation or not
-    return free_blocks;
+    alloc_blocks += handler.mmaped.num_blocks;
+    return alloc_blocks;
 }
 
 size_t _num_allocated_bytes(){
@@ -402,17 +403,18 @@ MallocMetadata* find_empty_block(DataList* list){
 
 
 // """"""""""""""""""""""""""""""" mallocs """"""""""""""""""""""""""""""
-
+/**
+ *  Allocate memory of a certain size in heap or mmap somewhere
+ */
 void* smalloc(size_t size){
     DEBUG_PRINT();
+    if (!handler.init){
+        _init_handler();
+    }
 
     // checks for invalid inputs
     if (size == 0 || size > 100000000){ // if equal to 0 or larger then 10^8
         return NULL;
-    }
-
-    if (!handler.init){
-        _init_handler();
     }
 
     int order = Orders_mapping::size_to_order(size, false);
@@ -450,11 +452,17 @@ void* smalloc(size_t size){
             }
         }
 
-        // TODO: split to buddies (should this be done recursivly to fine grain?)
-        size_t shrink_to_size = Orders_mapping::order_to_size(order - 1);
-        if (order > 0 && size + sizeof(MallocMetadata) <= shrink_to_size && !perfect_fit){
-            datalist = &handler.tbl[order - 1];
-            _split_block(block, &handler.tbl[order], datalist, shrink_to_size);
+        // split to buddies
+        if (order > 0){
+            int temp_order = order - 1;
+            size_t shrink_to_size = Orders_mapping::order_to_size(temp_order);
+            
+            while (temp_order >= 0 && size + sizeof(MallocMetadata) <= shrink_to_size && !perfect_fit){
+                datalist = &handler.tbl[temp_order];
+                _split_block(block, &handler.tbl[temp_order + 1], datalist, shrink_to_size);
+                temp_order--;
+                shrink_to_size = Orders_mapping::order_to_size(temp_order);
+            }
         }
         _populate_block(block, datalist, size);
         return block->data;
@@ -463,6 +471,9 @@ void* smalloc(size_t size){
     return nullptr; // won't reach this
 }
 
+/**
+ *  Use smalloc to allocate zeroed memory
+ */
 void* scalloc(size_t num, size_t size){
     DEBUG_PRINT();
     // checks for invalid inputs
@@ -480,7 +491,9 @@ void* scalloc(size_t num, size_t size){
     return allocated_space;
 }
 
-
+/**
+ *  Frees the pointer to memory (from heap or mmap respectively)
+ */
 void sfree(void* p){
     DEBUG_PRINT();
     if (p == nullptr)
@@ -511,6 +524,9 @@ void sfree(void* p){
     }
 }
 
+/**
+ * Implements the simple realloc
+ */
 void* srealloc(void* oldp, size_t size){
     DEBUG_PRINT();
     // checks for invalid inputs
