@@ -316,7 +316,7 @@ bool _check_merge_blocks(
 
     // check if buddy is also freed
     MallocMetadata* buddy = (MallocMetadata*)((size_t)block ^ Orders_mapping::order_to_size(order));
-    if (!buddy->is_free){
+    if (!buddy->is_free || buddy->real_size != block->real_size){
         return false;
     }
 
@@ -343,12 +343,12 @@ MallocMetadata* _merge_blocks(
 
     // check if buddy is also freed
     MallocMetadata* buddy = (MallocMetadata*)((size_t)block ^ block->real_size);
-    if (!buddy->is_free){
+    if (!buddy->is_free || buddy->real_size != block->real_size){
         return block;
     }
-    if (buddy->real_size != block->real_size){
-        return block;
-    }
+    // if (buddy->real_size != block->real_size){
+    //     return block;
+    // }
 
     _remove_block(block, org_datalist);
     _remove_block(buddy, org_datalist);
@@ -395,12 +395,13 @@ MallocMetadata* find_empty_block(DataList* list){
         return nullptr;
     }
     MallocMetadata* current = list->first_data_list;
+    MallocMetadata* minimal = nullptr;
     while (current != nullptr){
-        if (current->is_free)
-            return current;
+        if (current->is_free && (minimal == nullptr || (size_t)minimal > (size_t)current){
+            minimal = current;
         current = current->next;
     }
-    return nullptr;
+    return minimal;
 }
 
 
