@@ -14,12 +14,12 @@ const uintptr_t MB = 1 << 20;
 
 // #define DEBUG
 #ifdef DEBUG
-#define DEBUG_ASSERT(test) {assert(test); std::cout << "passed: [ " << #test << " ]" << std::endl;} 
+#define DEBUG_ASSERT(test) {assert(test); std::cout << "passed: [ " << #test << " ]" << std::endl;}
 #define DEBUG_PRINT(fmt, ...) \
         fprintf(stderr, "[DEBUG] %s:%d:%s(): " fmt "\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__)
 #else
 #define DEBUG_PRINT(...) ((void)0)
-#define DEBUG_ASSERT(...) ((void)0) 
+#define DEBUG_ASSERT(...) ((void)0)
 
 #endif
 
@@ -69,17 +69,17 @@ struct Orders_mapping{
 };
 
 const size_t Orders_mapping::orders[MAX_ORDER + 1] = {
-    1 << 7,
-    1 << 8,
-    1 << 9,
-    1 << 10,
-    1 << 11,
-    1 << 12,
-    1 << 13,
-    1 << 14,
-    1 << 15,
-    1 << 16,
-    1 << 17
+        1 << 7,
+        1 << 8,
+        1 << 9,
+        1 << 10,
+        1 << 11,
+        1 << 12,
+        1 << 13,
+        1 << 14,
+        1 << 15,
+        1 << 16,
+        1 << 17
 };
 
 struct Handle{
@@ -192,7 +192,7 @@ size_t _num_allocated_bytes(){
             curr = curr->next;
         }
     }
-    
+
     MallocMetadata* curr = handler.mmaped.first_data_list;
     while (curr != nullptr){
         alloc_bytes += curr->real_size - _size_meta_data();
@@ -237,7 +237,7 @@ void _init_handler(){
         exit(1);
     }
 
-    // initialize ORDER_10 blocks, allocate 32 mega blocks of size 128 KB each. 
+    // initialize ORDER_10 blocks, allocate 32 mega blocks of size 128 KB each.
     MallocMetadata* aligned_mem_start = (MallocMetadata*)(misalignment + curr_addr);
     // DEBUG_ASSERT((size_t)aligned_mem_start % (4 * MB) == 0);
 
@@ -253,10 +253,10 @@ void _init_handler(){
 
 // static int t = 0;
 void _init_block(
-    MallocMetadata* block,
-    DataList* datalist,
-    size_t size,
-    bool is_real_size = false
+        MallocMetadata* block,
+        DataList* datalist,
+        size_t size,
+        bool is_real_size = false
 ){
     DEBUG_PRINT();
     block->is_free = true;
@@ -303,9 +303,9 @@ void _remove_block(MallocMetadata* block, DataList* datalist){
 
 // merge blocks recursively
 bool _check_merge_blocks(
-    MallocMetadata* block,
-    size_t request_size,
-    int order
+        MallocMetadata* block,
+        size_t request_size,
+        int order
 ){
     DEBUG_PRINT();
     if (request_size > Orders_mapping::order_to_size(MAX_ORDER))
@@ -326,11 +326,11 @@ bool _check_merge_blocks(
 }
 
 MallocMetadata* _merge_blocks(
-    MallocMetadata* block,
-    DataList* org_datalist,
-    DataList* dst_datalist,
-    int order,
-    size_t request_size = 0 // real size
+        MallocMetadata* block,
+        DataList* org_datalist,
+        DataList* dst_datalist,
+        int order,
+        size_t request_size = 0 // real size
 ){
     DEBUG_PRINT();
     if (request_size != 0 && request_size <= Orders_mapping::order_to_size(order)){
@@ -362,10 +362,10 @@ MallocMetadata* _merge_blocks(
 }
 
 MallocMetadata* _split_block(
-    MallocMetadata* block,
-    DataList* org_datalist,
-    DataList* dst_datalist,
-    size_t size
+        MallocMetadata* block,
+        DataList* org_datalist,
+        DataList* dst_datalist,
+        size_t size
 ){
     DEBUG_PRINT();
     _remove_block(block, org_datalist);
@@ -377,9 +377,9 @@ MallocMetadata* _split_block(
 }
 
 void _populate_block(
-    MallocMetadata* block,
-    DataList* datalist,
-    size_t size
+        MallocMetadata* block,
+        DataList* datalist,
+        size_t size
 ){
     DEBUG_PRINT();
     // we don't really need this but maybe for fragmentation computation or something
@@ -397,7 +397,7 @@ MallocMetadata* find_empty_block(DataList* list){
     MallocMetadata* current = list->first_data_list;
     MallocMetadata* minimal = nullptr;
     while (current != nullptr){
-        if (current->is_free && (minimal == nullptr || (size_t)minimal > (size_t)current)
+        if (current->is_free && (minimal == nullptr || (size_t)minimal > (size_t)current))
             minimal = current;
         current = current->next;
     }
@@ -423,8 +423,8 @@ void* smalloc(size_t size){
     int order = Orders_mapping::size_to_order(size, false);
     if (order == Orders_mapping::MEGA){
         void* mapped = mmap(NULL, size + sizeof(MallocMetadata),
-            PROT_READ | PROT_WRITE,
-            MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+                            PROT_READ | PROT_WRITE,
+                            MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
         DEBUG_PRINT("MMAPED: %p, %lu bytes", mapped, size + sizeof(MallocMetadata));
         if (mapped == nullptr){
             // handle error
@@ -436,7 +436,7 @@ void* smalloc(size_t size){
         return block->data;
     }
 
-    // try to allocate in incrementing size. 
+    // try to allocate in incrementing size.
     DataList* datalist = &handler.tbl[order];
     bool perfect_fit = true;
     while (true){
@@ -509,7 +509,7 @@ void sfree(void* p){
     MallocMetadata* metadata_p = (MallocMetadata*)((char*)p - sizeof(MallocMetadata));
     if (metadata_p->is_free)
         return;
-    
+
     metadata_p->is_free = true;
     int order = Orders_mapping::size_to_order(metadata_p->real_size, true);
     DataList* datalist;
