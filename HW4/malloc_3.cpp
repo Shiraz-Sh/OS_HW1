@@ -397,7 +397,7 @@ MallocMetadata* find_empty_block(DataList* list){
     MallocMetadata* current = list->first_data_list;
     MallocMetadata* minimal = nullptr;
     while (current != nullptr){
-        if (current->is_free && (minimal == nullptr || (size_t)minimal > (size_t)current){
+        if (current->is_free && (minimal == nullptr || (size_t)minimal > (size_t)current)
             minimal = current;
         current = current->next;
     }
